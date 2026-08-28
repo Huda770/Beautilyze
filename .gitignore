@@ -1,0 +1,10 @@
+﻿venv/
+backend/venv/
+__pycache__/
+*.pyc
+skincare.db
+backend/skincare.db
+backend/02_01+shutterphoto*/
+.env
+.vscode/
+.DS_Store

@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Beautilyze — Analyze</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FAF6F1;
+    --text: #241C1F;
+    --sage: #6B7B5E;
+    --clay: #E8B4A0;
+    --line: #D9CFC5;
+    --card: #FFFFFF;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 48px;
+  }
+  .logo {
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  header a {
+    color: var(--text);
+    text-decoration: none;
+    font-size: 14px;
+    opacity: 0.65;
+  }
+  header a:hover { opacity: 1; }
+
+  main {
+    max-width: 620px;
+    margin: 0 auto;
+    padding: 20px 24px 100px;
+  }
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 34px;
+  }
+  .sub {
+    font-size: 15px;
+    opacity: 0.6;
+    margin-top: 6px;
+    margin-bottom: 36px;
+  }
+
+  .upload-box {
+    border: 1.5px dashed var(--line);
+    border-radius: 14px;
+    padding: 36px 20px;
+    text-align: center;
+    margin-bottom: 36px;
+    background: var(--card);
+    cursor: pointer;
+  }
+  .upload-box input { display: none; }
+  .upload-icon { font-size: 28px; margin-bottom: 8px; }
+  .upload-label {
+    font-size: 14px;
+    opacity: 0.7;
+  }
+  .file-name {
+    font-size: 13px;
+    margin-top: 8px;
+    color: var(--sage);
+    font-weight: 500;
+  }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--sage);
+    margin-bottom: 12px;
+  }
+  .section { margin-bottom: 32px; }
+
+  .pill-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .pill {
+    position: relative;
+  }
+  .pill input {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    margin: 0;
+  }
+  .pill span {
+    display: inline-block;
+    padding: 9px 16px;
+    border-radius: 100px;
+    border: 1.5px solid var(--line);
+    font-size: 13.5px;
+    background: var(--card);
+    transition: all 0.15s ease;
+  }
+  .pill input:checked + span {
+    background: var(--sage);
+    border-color: var(--sage);
+    color: #fff;
+  }
+
+  select {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1.5px solid var(--line);
+    background: var(--card);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+  }
+
+  .analyze-btn {
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: 12px;
+    background: var(--text);
+    color: var(--bg);
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  .analyze-btn:hover { opacity: 0.9; }
+
+  #result { margin-top: 44px; }
+  .result-title {
+    font-family: 'Fraunces', serif;
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 18px;
+  }
+  .routine-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 12px;
+  }
+  .routine-cat {
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--sage);
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .routine-name {
+    font-size: 15.5px;
+    font-weight: 500;
+  }
+  .error-msg {
+    background: #FBEAE7;
+    color: #B3413A;
+    padding: 14px 16px;
+    border-radius: 10px;
+    font-size: 14px;
+  }
+  .note-msg {
+    background: #FCF3E3;
+    color: #8A6116;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    margin-bottom: 16px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Beautilyze</div>
+  <a href="home.html">← Home</a>
+</header>
+
+<main>
+  <h1>Analyze your skin</h1>
+  <p class="sub">Upload a clear, well-lit photo of your face to get started.</p>
+
+  <label class="upload-box">
+    <div class="upload-icon">📷</div>
+    <div class="upload-label">Click to upload a photo</div>
+    <div class="file-name" id="fileName"></div>
+    <input type="file" id="imageInput" accept="image/*">
+  </label>
+
+  <div class="section">
+    <div class="section-title">Which products do you want recommended?</div>
+    <div class="pill-group" id="categorySection">
+      <label class="pill"><input type="checkbox" value="cleanser"><span>Cleanser</span></label>
+      <label class="pill"><input type="checkbox" value="toner"><span>Toner</span></label>
+      <label class="pill"><input type="checkbox" value="treatment"><span>Treatment</span></label>
+      <label class="pill"><input type="checkbox" value="serum"><span>Serum</span></label>
+      <label class="pill"><input type="checkbox" value="moisturizer"><span>Moisturizer</span></label>
+      <label class="pill"><input type="checkbox" value="sunscreen"><span>Sunscreen</span></label>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Select your skin concerns</div>
+    <div class="pill-group" id="concernSection">
+      <label class="pill"><input type="checkbox" value="Acne"><span>Acne</span></label>
+      <label class="pill"><input type="checkbox" value="Dark Circles"><span>Dark Circles</span></label>
+      <label class="pill"><input type="checkbox" value="Hyperpigmentation"><span>Hyperpigmentation</span></label>
+      <label class="pill"><input type="checkbox" value="Dullness"><span>Dull Skin</span></label>
+      <label class="pill"><input type="checkbox" value="Sun Tan"><span>Sun Tan</span></label>
+      <label class="pill"><input type="checkbox" value="Uneven Skin Tone"><span>Uneven Skin Tone</span></label>
+      <label class="pill"><input type="checkbox" value="Dehydrated Skin"><span>Dehydrated Skin</span></label>
+      <label class="pill"><input type="checkbox" value="Texture Issues"><span>Texture Issues</span></label>
+      <label class="pill"><input type="checkbox" value="Oil Control"><span>Oil Control</span></label>
+      <label class="pill"><input type="checkbox" value="Not Mentioned" id="notMentioned"><span>Not Mentioned</span></label>
+      <label class="pill"><input type="checkbox" value="No Skin Concerns" id="noConcerns"><span>No Skin Concerns</span></label>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Age group</div>
+    <select id="ageGroup">
+      <option value="14-18">14-18</option>
+      <option value="19-25">19-25</option>
+      <option value="26-35">26-35</option>
+      <option value="36-45">36-45</option>
+      <option value="45+">45+</option>
+    </select>
+  </div>
+
+  <button class="analyze-btn" onclick="uploadImage()">Analyze</button>
+
+  <div id="result"></div>
+</main>
+
+<script>
+  document.getElementById('imageInput').addEventListener('change', function() {
+    const name = this.files[0] ? this.files[0].name : "";
+    document.getElementById('fileName').innerText = name;
+  });
+
+  async function uploadImage() {
+    const file = document.getElementById('imageInput').files[0];
+
+    if (!file) {
+      document.getElementById('result').innerHTML = `<div class="error-msg">Please select an image first.</div>`;
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const categoryBoxes = document.querySelectorAll('#categorySection input[type="checkbox"]:checked');
+    const categories = Array.from(categoryBoxes).map(cb => cb.value);
+    formData.append('categories', JSON.stringify(categories));
+
+    const concernBoxes = document.querySelectorAll('#concernSection input[type="checkbox"]:checked');
+    let concerns = Array.from(concernBoxes).map(cb => cb.value);
+
+    if (concerns.includes("No Skin Concerns") || concerns.includes("Not Mentioned")) {
+      concerns = ["General"];
+    }
+
+    formData.append('concerns', JSON.stringify(concerns));
+
+    const ageGroup = document.getElementById('ageGroup').value;
+    formData.append('age_group', ageGroup);
+
+    document.getElementById('result').innerHTML = `<p style="opacity:0.6;">Analyzing...</p>`;
+
+    const res = await fetch('http://localhost:5000/predict', {
+      method: 'POST',
+      body: formData
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      document.getElementById('result').innerHTML = `<div class="error-msg">${data.error}</div>`;
+      return;
+    }
+
+    let noteHtml = "";
+    if (data.note) {
+      noteHtml = `<div class="note-msg">${data.note}</div>`;
+    }
+
+    displayRoutine(data.routine, noteHtml);
+  }
+
+  function displayRoutine(routine, noteHtml) {
+    const resultDiv = document.getElementById('result');
+
+    if (!routine || Object.keys(routine).length === 0) {
+      resultDiv.innerHTML = noteHtml + `<div class="error-msg">No suitable products found. Try selecting different concerns.</div>`;
+      return;
+    }
+
+    const categoryOrder = ["cleanser", "toner", "treatment", "serum", "moisturizer", "sunscreen"];
+    const categoryLabels = {
+      cleanser: "Cleanser",
+      toner: "Toner",
+      treatment: "Treatment",
+      serum: "Serum",
+      moisturizer: "Moisturizer",
+      sunscreen: "Sunscreen"
+    };
+
+    let html = noteHtml + `<div class="result-title">Your Recommended Routine</div>`;
+
+    categoryOrder.forEach(category => {
+      if (routine[category]) {
+        html += `
+          <div class="routine-card">
+            <div class="routine-cat">${categoryLabels[category]}</div>
+            <div class="routine-name">${routine[category]}</div>
+          </div>`;
+      }
+    });
+
+    resultDiv.innerHTML = html;
+  }
+</script>
+
+</body>
+</html>

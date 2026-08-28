@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Beautilyze</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FAF6F1;
+    --text: #F5F0E8;
+    --sage: #6B7B5E;
+    --clay: #E8B4A0;
+    --line: #D9CFC5;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    position: relative;
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: url('assets/background.jpg') center/cover no-repeat;
+    z-index: -2;
+  }
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 14, 10, 0.72);
+    z-index: -1;
+  }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 28px 48px;
+  }
+  .logo {
+    font-family: 'Fraunces', serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  nav a {
+    color: var(--text);
+    text-decoration: none;
+    font-size: 14px;
+    margin-left: 32px;
+    opacity: 0.75;
+  }
+  nav a:hover { opacity: 1; }
+
+  main {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 60px 24px 100px;
+    text-align: center;
+  }
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 56px;
+    line-height: 1.05;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+  .tagline {
+    font-size: 17px;
+    color: var(--text);
+    opacity: 0.75;
+    margin-top: 18px;
+    line-height: 1.6;
+  }
+
+  .cta-wrap {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    margin: 56px auto 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .glow {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle at center, var(--clay) 0%, var(--sage) 55%, transparent 75%);
+    opacity: 0.35;
+    filter: blur(6px);
+    animation: breathe 4s ease-in-out infinite;
+  }
+  @keyframes breathe {
+    0%, 100% { transform: scale(0.94); opacity: 0.28; }
+    50% { transform: scale(1.05); opacity: 0.42; }
+  }
+  .cta-btn {
+    position: relative;
+    width: 152px;
+    height: 152px;
+    border-radius: 50%;
+    background: var(--text);
+    color: #241C1F;
+    border: none;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+  }
+  .cta-btn:hover { transform: scale(1.04); }
+
+  .steps {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-top: 20px;
+    text-align: left;
+    flex-wrap: wrap;
+  }
+  .step {
+    max-width: 160px;
+  }
+  .step-num {
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    color: var(--sage);
+    font-weight: 600;
+  }
+  .step-title {
+    font-size: 15px;
+    font-weight: 500;
+    margin-top: 6px;
+    color: var(--text);
+  }
+  .step-desc {
+    font-size: 13px;
+    color: var(--text);
+    opacity: 0.65;
+    margin-top: 4px;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 600px) {
+    h1 { font-size: 40px; }
+    header { padding: 20px 24px; }
+    .steps { gap: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Beautilyze</div>
+  <nav>
+    <a href="#">About</a>
+    <a href="#">How it works</a>
+  </nav>
+</header>
+
+<main>
+  <h1>Beautilyze</h1>
+  <p class="tagline">AI-powered analysis, and a routine made for you.</p>
+
+  <div class="cta-wrap">
+    <div class="glow"></div>
+    <button class="cta-btn" onclick="window.location.href='index.html'">Start Analysis</button>
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-title">Upload</div>
+      <div class="step-desc">A clear photo of your face</div>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-title">Analyze</div>
+      <div class="step-desc">AI reads your skin type and concerns</div>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-title">Your routine</div>
+      <div class="step-desc">Get matched products instantly</div>
+    </div>
+  </div>
+</main>
+
+</body>
+</html>
