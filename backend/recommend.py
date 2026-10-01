@@ -2,10 +2,10 @@ import pandas as pd
 
 # Maps CNN's skin type labels to the CSV's skin type labels
 CNN_TO_CSV_SKIN_TYPE = {
-    "oily-skin": "Oily",
-    "dry-skin": "Dry",
-    "healthy": "Normal",
-    "acne-prone-skin": "Oily"  # treat acne-prone as oily for CSV lookup purposes, since CSV doesn't have this category
+    "oily": "Oily",
+    "dry": "Dry",
+    "combination": "Combination",
+    "normal": "Normal",
 }
 
 # Load the ingredient recommendation dataset

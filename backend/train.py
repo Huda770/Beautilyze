@@ -25,7 +25,7 @@ valid_transform = transforms.Compose([
 
 from torch.utils.data import random_split
 
-full_data = datasets.ImageFolder('02_01+shutterphoto', transform=train_transform)
+full_data = datasets.ImageFolder('Dataset', transform=train_transform)
 
 # Split: 80% train, 20% validation
 torch.manual_seed(42)
@@ -66,7 +66,7 @@ model.fc = nn.Sequential(
 
 
 # Use GPU if available, otherwise CPU
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 model = model.to(device)
 print("Training on:", device)
 

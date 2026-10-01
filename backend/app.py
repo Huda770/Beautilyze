@@ -26,15 +26,36 @@ model.fc = nn.Sequential(
 )
 
 # Load your trained weights
-model.load_state_dict(torch.load('skin_type_model.pth', map_location='cpu'))
+model.load_state_dict(torch.load('skin_type_model_newdataset.pth', map_location='cpu'))
 model.eval()
 
-face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+import requests
+import base64
+
+ROBOFLOW_API_KEY = "vczWdv2z1aHZw9C5Nh0I"
+ROBOFLOW_MODEL_ID = "face-detection-bj0ij/1"
 
 def contains_face(pil_image):
-    img_array = np.array(pil_image.convert('L'))
-    faces = face_cascade.detectMultiScale(img_array, scaleFactor=1.1, minNeighbors=5)
-    return len(faces) > 0
+    buffered = io.BytesIO()
+    pil_image.save(buffered, format="JPEG")
+    img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
+
+    response = requests.post(
+        f"https://detect.roboflow.com/{ROBOFLOW_MODEL_ID}",
+        params={"api_key": ROBOFLOW_API_KEY},
+        data=img_str,
+        headers={"Content-Type": "application/x-www-form-urlencoded"}
+    )
+    
+    result = response.json()
+    predictions = result.get("predictions", [])
+    print(f"Roboflow detected {len(predictions)} face(s)")
+    return len(predictions) > 0
+    
+    
+    
+    
+   
 
 
 
@@ -58,8 +79,10 @@ def predict():
     except Exception:
         return jsonify({"error": "Invalid image file. Please upload a valid photo (jpg/png)."}), 400
 
+    print("3. Starting face detection...")
     if not contains_face(img):
         return jsonify({"error": "No face detected. Please upload a clear photo of a face."}), 400
+    print("4. Face detection done")
 
     tensor = transform(img).unsqueeze(0)
 
@@ -78,8 +101,6 @@ def predict():
     selected_categories = json_lib.loads(request.form.get('categories', '[]'))
 
 
- 
-
     if not concerns:
         return jsonify({"error": "Please select at least one skin concern."}), 400
 
@@ -92,7 +113,7 @@ def predict():
         category: product["name"] for category, product in routine.items()
     }
 
-    response = {"routine": clean_routine}
+    response = {"routine": clean_routine, "skin_type" : predicted_skin_type}
     if low_confidence:
         response["note"] = "Analysis confidence was low — for best results, use a clear, well-lit front-facing photo."
 

@@ -303,10 +303,10 @@
       noteHtml = `<div class="note-msg">${data.note}</div>`;
     }
 
-    displayRoutine(data.routine, noteHtml);
+    displayRoutine(data.routine, noteHtml, data.skin_type);
   }
 
-  function displayRoutine(routine, noteHtml) {
+  function displayRoutine(routine, noteHtml, skinType) {
     const resultDiv = document.getElementById('result');
 
     if (!routine || Object.keys(routine).length === 0) {
@@ -324,7 +324,9 @@
       sunscreen: "Sunscreen"
     };
 
-    let html = noteHtml + `<div class="result-title">Your Recommended Routine</div>`;
+    let skinTypeLabel = skinType.replace(/-/g, ' ').replace(/\b\w/g, c =>  c.toUpperCase());
+    let html = noteHtml + `<div class="result-title">Your Skin Type: ${skinTypeLabel}</div>`;
+    html += `<div class="result-title" style="font-size :20px; margin-top :24px;">Your Recommended Routine</div>`
 
     categoryOrder.forEach(category => {
       if (routine[category]) {
