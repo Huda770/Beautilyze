@@ -6,7 +6,7 @@ import json
 
 # Load class names
 
-class_names = ["acne-prone-skin", "dry","normal", "oily"]
+class_names = ["combination", "dry", "oily"]
 
 # Rebuild the same model structure used in training
 model = models.resnet18(weights=None)
@@ -16,7 +16,7 @@ model.fc = nn.Sequential(
 )
 
 # Load trained weights
-model.load_state_dict(torch.load('skin_type_model.pth', map_location='cpu'))
+model.load_state_dict(torch.load('skin_type_model_newdataset.pth', map_location='cpu'))
 model.eval()
 
 transform = transforms.Compose([
