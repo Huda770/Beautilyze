@@ -16,7 +16,7 @@ model.fc = nn.Sequential(
 )
 
 # Load trained weights
-model.load_state_dict(torch.load('skin_type_model_newdataset.pth', map_location='cpu'))
+model.load_state_dict(torch.load('skin_type_model.pth', map_location='cpu'))
 model.eval()
 
 transform = transforms.Compose([

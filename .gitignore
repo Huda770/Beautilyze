@@ -8,8 +8,6 @@ backend/Dataset*/
 .env
 .vscode/
 .DS_Store
-backend/skin_Type_model.pth
-backend/skin_type_model_newdataset.pth
 backend/*.jpg
 backend/*.jpeg
 backend/*.png
