@@ -8,6 +8,13 @@ CNN_TO_CSV_SKIN_TYPE = {
     "normal": "Normal",
 }
 
+# Maps CNN's skin type labels to the skin type tags used in products.py / skincare.db
+CNN_TO_PRODUCT_SKIN_TYPE = {
+    "oily": "oily-skin",
+    "dry": "dry-skin",
+    "combination": "combination-skin",
+}
+
 # Load the ingredient recommendation dataset
 df = pd.read_csv('RecLogic.csv')
 
@@ -60,10 +67,11 @@ def score_products(skin_type, ideal_ingredients):
     """
     scored = []
     products = get_products()
+    product_skin_type = CNN_TO_PRODUCT_SKIN_TYPE.get(skin_type, skin_type)
 
     for product in products:
         # Skip products that don't suit this skin type at all
-        if skin_type.lower() not in [s.lower() for s in product["skin_types"]]:
+        if product_skin_type.lower() not in [s.lower() for s in product["skin_types"]]:
             continue
 
         # Count ingredient overlap

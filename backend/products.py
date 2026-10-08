@@ -14,7 +14,7 @@ products = [
     {
         "name": "The Ordinary Azelaic Acid Suspension 10%",
         "category": "treatment",
-        "skin_types": ["oily-skin", "acne-prone-skin", "dry-skin"],
+        "skin_types": ["oily-skin", "acne-prone-skin", "dry-skin", "combination-skin"],
         "ingredients": ["Azelaic Acid"]
     },
     {
@@ -38,13 +38,13 @@ products = [
     {
         "name": "Neutrogena Hydro Boost Water Gel",
         "category": "moisturizer",
-        "skin_types": ["oily-skin", "healthy"],
+        "skin_types": ["oily-skin", "healthy", "combination-skin"],
         "ingredients": ["Hyaluronic Acid", "Glycerin"]
     },
     {
         "name": "The Ordinary Vitamin C Suspension 23%",
         "category": "treatment",
-        "skin_types": ["dry-skin", "healthy", "oily-skin"],
+        "skin_types": ["dry-skin", "healthy", "oily-skin", "combination-skin"],
         "ingredients": ["Vitamin C"]
     },
     {
@@ -56,7 +56,7 @@ products = [
     {
         "name": "EltaMD UV Clear Broad-Spectrum SPF 46",
         "category": "sunscreen",
-        "skin_types": ["oily-skin", "acne-prone-skin", "dry-skin", "healthy"],
+        "skin_types": ["oily-skin", "acne-prone-skin", "dry-skin", "healthy", "combination-skin"],
         "ingredients": ["Niacinamide"]
     },
     {
@@ -106,7 +106,7 @@ products = [
     {
         "name": "The Ordinary Hyaluronic Acid 2% + B5",
         "category": "serum",
-        "skin_types": ["dry-skin", "healthy", "oily-skin"],
+        "skin_types": ["dry-skin", "healthy", "oily-skin", "combination-skin"],
         "ingredients": ["Hyaluronic Acid"]
     },
     {
@@ -130,7 +130,7 @@ products = [
     {
         "name": "Neutrogena Ultra Sheer Dry-Touch SPF 55",
         "category": "sunscreen",
-        "skin_types": ["dry-skin", "healthy", "oily-skin"],
+        "skin_types": ["dry-skin", "healthy", "oily-skin", "combination-skin"],
         "ingredients": ["Glycerin"]
     },
 
@@ -138,7 +138,7 @@ products = [
     {
         "name": "COSRX Low pH Good Morning Gel Cleanser",
         "category": "cleanser",
-        "skin_types": ["oily-skin", "acne-prone-skin"],
+        "skin_types": ["oily-skin", "acne-prone-skin", "combination-skin"],
         "ingredients": ["Green Tea Extract", "Tea Tree"]
     },
     {
@@ -150,7 +150,7 @@ products = [
     {
         "name": "Paula's Choice Skin Balancing Pore-Reducing Toner",
         "category": "toner",
-        "skin_types": ["oily-skin"],
+        "skin_types": ["oily-skin", "combination-skin"],
         "ingredients": ["Niacinamide", "Green Tea Extract"]
     },
     {
@@ -180,7 +180,7 @@ products = [
     {
         "name": "Belif Aqua Bomb",
         "category": "moisturizer",
-        "skin_types": ["oily-skin", "healthy"],
+        "skin_types": ["oily-skin", "healthy", "combination-skin"],
         "ingredients": ["Hyaluronic Acid", "Aloe Vera"]
     },
     {
@@ -192,7 +192,7 @@ products = [
     {
         "name": "Biore UV Aqua Rich Watery Essence SPF 50",
         "category": "sunscreen",
-        "skin_types": ["oily-skin", "healthy"],
+        "skin_types": ["oily-skin", "healthy", "combination-skin"],
         "ingredients": ["Hyaluronic Acid"]
     },
 
@@ -262,7 +262,7 @@ products = [
     {
         "name": "Cetaphil Gentle Skin Cleanser",
         "category": "cleanser",
-        "skin_types": ["healthy", "dry-skin"],
+        "skin_types": ["healthy", "dry-skin", "combination-skin"],
         "ingredients": ["Glycerin"]
     },
     {
@@ -274,7 +274,7 @@ products = [
     {
         "name": "Supergoop Unseen Sunscreen SPF 40",
         "category": "sunscreen",
-        "skin_types": ["healthy", "oily-skin", "dry-skin"],
+        "skin_types": ["healthy", "oily-skin", "dry-skin", "combination-skin"],
         "ingredients": ["Vitamin C"]
     },
 
@@ -282,19 +282,19 @@ products = [
     {
         "name": "The Ordinary Alpha Arbutin 2% + HA",
         "category": "serum",
-        "skin_types": ["oily-skin", "dry-skin", "healthy", "acne-prone-skin"],
+        "skin_types": ["oily-skin", "dry-skin", "healthy", "acne-prone-skin", "combination-skin"],
         "ingredients": ["Alpha Arbutin", "Hyaluronic Acid"]
     },
     {
         "name": "Good Molecules Discoloration Correcting Serum",
         "category": "serum",
-        "skin_types": ["oily-skin", "dry-skin", "healthy"],
+        "skin_types": ["oily-skin", "dry-skin", "healthy", "combination-skin"],
         "ingredients": ["Tranexamic Acid", "Niacinamide", "Alpha Arbutin"]
     },
     {
         "name": "The Ordinary Caffeine Solution 5% + EGCG",
         "category": "serum",
-        "skin_types": ["oily-skin", "dry-skin", "healthy"],
+        "skin_types": ["oily-skin", "dry-skin", "healthy", "combination-skin"],
         "ingredients": ["Caffeine", "Green Tea Extract"]
     },
     {
@@ -306,31 +306,31 @@ products = [
     {
         "name": "Drunk Elephant C-Firma Fresh Day Serum",
         "category": "serum",
-        "skin_types": ["oily-skin", "dry-skin", "healthy"],
+        "skin_types": ["oily-skin", "dry-skin", "healthy", "combination-skin"],
         "ingredients": ["Vitamin C"]
     },
     {
         "name": "SkinCeuticals C E Ferulic",
         "category": "serum",
-        "skin_types": ["dry-skin", "healthy", "oily-skin"],
+        "skin_types": ["dry-skin", "healthy", "oily-skin", "combination-skin"],
         "ingredients": ["Vitamin C"]
     },
     {
         "name": "The Ordinary Lactic Acid 10% + HA",
         "category": "treatment",
-        "skin_types": ["oily-skin", "dry-skin", "healthy"],
+        "skin_types": ["oily-skin", "dry-skin", "healthy", "combination-skin"],
         "ingredients": ["Lactic Acid", "Hyaluronic Acid"]
     },
     {
         "name": "The Inkey List Caffeine Eye Cream",
         "category": "serum",
-        "skin_types": ["oily-skin", "dry-skin", "healthy", "acne-prone-skin"],
+        "skin_types": ["oily-skin", "dry-skin", "healthy", "acne-prone-skin", "combination-skin"],
         "ingredients": ["Caffeine", "Hyaluronic Acid"]
     },
     {
         "name": "Naturium Azelaic Topical Acid 10%",
         "category": "treatment",
-        "skin_types": ["oily-skin", "acne-prone-skin", "dry-skin"],
+        "skin_types": ["oily-skin", "acne-prone-skin", "dry-skin", "combination-skin"],
         "ingredients": ["Azelaic Acid"]
     },
 ]
