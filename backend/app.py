@@ -43,6 +43,20 @@ def initialize_product_database():
 
 initialize_product_database()
 
+# Load all local validation cascades once. Requiring multiple independent
+# signals reduces false positives from textures and objects in arbitrary photos.
+CASCADE_DIR = Path(cv2.data.haarcascades)
+FACE_CASCADE = cv2.CascadeClassifier(str(CASCADE_DIR / 'haarcascade_frontalface_default.xml'))
+ALT_FACE_CASCADE = cv2.CascadeClassifier(str(CASCADE_DIR / 'haarcascade_frontalface_alt2.xml'))
+EYE_CASCADE = cv2.CascadeClassifier(str(CASCADE_DIR / 'haarcascade_eye_tree_eyeglasses.xml'))
+for cascade, filename in (
+    (FACE_CASCADE, 'haarcascade_frontalface_default.xml'),
+    (ALT_FACE_CASCADE, 'haarcascade_frontalface_alt2.xml'),
+    (EYE_CASCADE, 'haarcascade_eye_tree_eyeglasses.xml'),
+):
+    if cascade.empty():
+        raise RuntimeError(f'OpenCV could not load its required cascade: {CASCADE_DIR / filename}')
+
 # Load class names
 with open('class_names.json', 'r') as f:
     class_names = json.load(f)
@@ -58,33 +72,44 @@ model.fc = nn.Sequential(
 model.load_state_dict(torch.load('skin_type_model.pth', map_location='cpu'))
 model.eval()
 
-import requests
-import base64
-
-ROBOFLOW_API_KEY = os.environ.get('ROBOFLOW_API_KEY', '')
-ROBOFLOW_MODEL_ID = "face-detection-bj0ij/1"
-
 def contains_face(pil_image):
-    if not ROBOFLOW_API_KEY:
-        gray = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2GRAY)
-        detector = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-        return len(detector.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(40, 40))) > 0
-    buffered = io.BytesIO()
-    pil_image.save(buffered, format="JPEG")
-    img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
+    """Accept only a face box supported by a second face and eye detector."""
+    rgb = np.asarray(pil_image.convert('RGB'))
+    if rgb.size == 0 or rgb.ndim != 3 or rgb.shape[2] != 3:
+        raise ValueError('Image could not be converted to RGB.')
+    gray = cv2.equalizeHist(cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY))
+    min_size = max(80, min(gray.shape[:2]) // 8)
+    options = dict(scaleFactor=1.1, minNeighbors=7, minSize=(min_size, min_size))
+    face_boxes = FACE_CASCADE.detectMultiScale(gray, **options)
+    alt_boxes = ALT_FACE_CASCADE.detectMultiScale(gray, **options)
 
-    response = requests.post(
-        f"https://detect.roboflow.com/{ROBOFLOW_MODEL_ID}",
-        params={"api_key": ROBOFLOW_API_KEY},
-        data=img_str,
-        headers={"Content-Type": "application/x-www-form-urlencoded"}
-    )
+    def overlap(first, second):
+        left, top = max(first[0], second[0]), max(first[1], second[1])
+        right = min(first[0] + first[2], second[0] + second[2])
+        bottom = min(first[1] + first[3], second[1] + second[3])
+        intersection = max(0, right - left) * max(0, bottom - top)
+        union = first[2] * first[3] + second[2] * second[3] - intersection
+        return intersection / union if union else 0
 
-    response.raise_for_status()
-    result = response.json()
-    predictions = result.get("predictions", [])
-    print(f"Roboflow detected {len(predictions)} face(s)")
-    return len(predictions) > 0
+    for x, y, width, height in face_boxes:
+        face_box = (x, y, width, height)
+        if not any(overlap(face_box, tuple(map(int, other))) >= 0.35 for other in alt_boxes):
+            continue
+        upper_face = gray[y:y + int(height * 0.68), x:x + width]
+        eyes = EYE_CASCADE.detectMultiScale(
+            upper_face,
+            scaleFactor=1.1,
+            minNeighbors=6,
+            minSize=(max(12, width // 10), max(12, height // 10)),
+        )
+        centers = [(ex + ew / 2, ey + eh / 2) for ex, ey, ew, eh in eyes]
+        for index, first in enumerate(centers):
+            for second in centers[index + 1:]:
+                distance_x = abs(first[0] - second[0])
+                distance_y = abs(first[1] - second[1])
+                if width * 0.22 <= distance_x <= width * 0.7 and distance_y <= height * 0.16:
+                    return True
+    return False
 
 
 
@@ -106,7 +131,7 @@ def health():
     return jsonify({
         'status': 'ok',
         'model_loaded': True,
-        'face_detection': 'roboflow' if ROBOFLOW_API_KEY else 'local-opencv',
+        'face_detection': 'opencv-haar-consensus-eye',
     })
 
 @app.route('/predict', methods=['POST'])
@@ -125,9 +150,9 @@ def predict():
     print("3. Starting face detection...")
     try:
         face_detected = contains_face(img)
-    except requests.RequestException:
-        app.logger.exception('Face detection service request failed')
-        return jsonify({'error': 'Face detection service is unavailable. Please try again shortly.'}), 502
+    except (cv2.error, ValueError) as exc:
+        app.logger.exception('Local OpenCV face detection failed')
+        return jsonify({'error': f'Image processing failed: {exc}'}), 422
     if not face_detected:
         return jsonify({"error": "No face detected. Please upload a clear photo of a face."}), 400
     print("4. Face detection done")
