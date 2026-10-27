@@ -19,6 +19,8 @@ export type Analysis = {
   createdAt: string;
   ageGroup: string;
   concerns: string[];
+  // Combined allergy and sensitivity exclusions.
+  allergies: string[];
 };
 
 export type Account = { id: number; email: string; age_group: string };
@@ -35,6 +37,9 @@ type AppStateValue = {
   clearAuthError: () => void;
   signIn: (email: string, password: string, register?: boolean) => Promise<void>;
   signOut: () => Promise<void>;
+  // Combined allergy and sensitivity exclusions.
+  allergies: string[];
+  setAllergies: (allergies: string[]) => void;
 };
 
 const AppState = createContext<AppStateValue | null>(null);
@@ -143,6 +148,17 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     analysis, setAnalysis, ageGroup, setAgeGroup, account, authReady, authError,
     clearAuthError: () => setAuthError(''), signIn, signOut,
   }), [analysis, ageGroup, account, authReady, authError, token]);
+// Keep the selected age range, latest analysis, and ingredient filters for this session.
+export function AppStateProvider({ children }: PropsWithChildren) {
+  const [storedAnalysis, setAnalysis] = useState<Analysis | null>(null);
+  const [ageGroup, setAgeGroup] = useState('19-25');
+  const [allergies, setAllergies] = useState<string[]>([]);
+  // Hide stale results, including a request completed after preferences changed.
+  const sameIngredients = (first: string[], second: string[]) =>
+    JSON.stringify(first.map((item) => item.trim().toLowerCase()).sort()) ===
+    JSON.stringify(second.map((item) => item.trim().toLowerCase()).sort());
+  const analysis = storedAnalysis && sameIngredients(storedAnalysis.allergies, allergies) ? storedAnalysis : null;
+  const value = useMemo(() => ({ analysis, setAnalysis, ageGroup, setAgeGroup, allergies, setAllergies }), [analysis, ageGroup, allergies]);
 
   return <AppState.Provider value={value}>{children}</AppState.Provider>;
 }

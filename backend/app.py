@@ -178,16 +178,27 @@ def predict():
     except (TypeError, ValueError):
         return jsonify({'error': 'Invalid analysis options.'}), 400
     age_group = request.form.get('age_group', '14-18')
-
+    try:
+        allergies = json_lib.loads(request.form.get('allergies', '[]'))
+        sensitivities = json_lib.loads(request.form.get('sensitivities', '[]'))
+        if not isinstance(allergies, list) or not all(isinstance(a, str) for a in allergies):
+            raise ValueError()
+        if not isinstance(sensitivities, list) or not all(isinstance(s, str) for s in sensitivities):
+            raise ValueError()
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid ingredient preferences format."}), 400
 
     if not concerns:
         return jsonify({"error": "Please select at least one skin concern."}), 400
 
+    combined_avoid_list = allergies + sensitivities
     routine_concerns = ['General'] if concerns == ['No Skin Concerns'] else concerns
-    routine = build_routine(predicted_skin_type, routine_concerns, age_group, selected_categories)
-
-    if not routine:
-        return jsonify({"error": "No suitable products found for your profile. Try different concerns."}), 200
+    routine = build_routine(
+        predicted_skin_type,
+        routine_concerns,
+        age_group,
+        selected_categories,
+        allergies=combined_avoid_list)
 
     response = {"routine": routine, "skin_type": predicted_skin_type, "confidence": confidence.item()}
     if low_confidence:
