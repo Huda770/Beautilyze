@@ -12,7 +12,7 @@ const concernOptions = ['Acne', 'Dark Circles', 'Hyperpigmentation', 'Dullness',
 
 // Collect a photo and preferences, then send them to the Python API.
 export default function AnalyzeScreen() {
-  const { ageGroup, setAgeGroup, setAnalysis } = useAppState();
+  const { ageGroup, setAgeGroup, setAnalysis, allergies } = useAppState();
   const [photo, setPhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [concerns, setConcerns] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -51,9 +51,10 @@ export default function AnalyzeScreen() {
       form.append('image', new File(photo.uri) as unknown as Blob);
       form.append('age_group', ageGroup);
       form.append('concerns', JSON.stringify(concerns));
+      form.append('allergies', JSON.stringify(allergies));
       const response = await expoFetch(`${API_URL}/predict`, { method: 'POST', body: form });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'We could not analyze this photo. Try another clear face photo.');
+      if (!response.ok || data.error) throw new Error(data.error || 'We could not analyze this photo. Try another clear face photo.');
       setAnalysis({
         skin_type: data.skin_type,
         confidence: data.confidence,
@@ -61,6 +62,7 @@ export default function AnalyzeScreen() {
         createdAt: new Date().toISOString(),
         ageGroup,
         concerns,
+        allergies: [...allergies],
       });
       setMessage('Your skin analysis is ready. Open Routine to see your results.');
     } catch (error) {
@@ -82,6 +84,7 @@ export default function AnalyzeScreen() {
     {/* Choose an age range and any skin concerns for recommendations. */}
     <Card><Label>Age range</Label><Body>Used to tailor ingredient suggestions.</Body><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 9 }}>{ageGroups.map((age) => <Text key={age} onPress={() => setAgeGroup(age)} style={[styles.chip, age === ageGroup && styles.chipSelected, { overflow: 'hidden' }]}>{<Text style={[styles.chipText, age === ageGroup && styles.chipTextSelected]}>{age}</Text>}</Text>)}</View></Card>
     <Card><Label>What would you like help with?</Label><Body>Choose all that apply.</Body><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 9 }}>{concernOptions.map((item) => { const selected = concerns.includes(item); return <Text key={item} onPress={() => toggleConcern(item)} style={[styles.chip, selected && styles.chipSelected, { overflow: 'hidden' }]}><Text style={[styles.chipText, selected && styles.chipTextSelected]}>{item}</Text></Text>; })}</View></Card>
+    <Card><Label>Allergies and sensitivities</Label><Body>{allergies.length ? `Ingredients to exclude: ${allergies.join(', ')}.` : 'No ingredient exclusions added. Add allergies or sensitivities in Profile before analyzing.'}</Body><Body>Filters use the ingredients recorded in our catalogue. Full ingredient labels are not yet available.</Body></Card>
     {/* Show errors or the success message, then allow a new submission. */}
     {message ? <Card style={{ backgroundColor: message.startsWith('Your skin') ? palette.mint : '#F8E9E5', borderColor: 'transparent' }}><Body style={{ color: message.startsWith('Your skin') ? palette.greenDark : palette.danger }}>{message}</Body></Card> : null}
     <Button title={loading ? 'Analyzing your photo…' : 'Analyze my skin'} disabled={loading} onPress={submit} />

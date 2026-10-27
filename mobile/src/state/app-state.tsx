@@ -14,6 +14,8 @@ export type Analysis = {
   createdAt: string;
   ageGroup: string;
   concerns: string[];
+  // Combined allergy and sensitivity exclusions.
+  allergies: string[];
 };
 
 // Values shared by screens while the app stays open.
@@ -22,15 +24,24 @@ type AppStateValue = {
   setAnalysis: (analysis: Analysis | null) => void;
   ageGroup: string;
   setAgeGroup: (ageGroup: string) => void;
+  // Combined allergy and sensitivity exclusions.
+  allergies: string[];
+  setAllergies: (allergies: string[]) => void;
 };
 
 const AppState = createContext<AppStateValue | null>(null);
 
-// Keep the selected age range and latest analysis for this session.
+// Keep the selected age range, latest analysis, and ingredient filters for this session.
 export function AppStateProvider({ children }: PropsWithChildren) {
-  const [analysis, setAnalysis] = useState<Analysis | null>(null);
+  const [storedAnalysis, setAnalysis] = useState<Analysis | null>(null);
   const [ageGroup, setAgeGroup] = useState('19-25');
-  const value = useMemo(() => ({ analysis, setAnalysis, ageGroup, setAgeGroup }), [analysis, ageGroup]);
+  const [allergies, setAllergies] = useState<string[]>([]);
+  // Hide stale results, including a request completed after preferences changed.
+  const sameIngredients = (first: string[], second: string[]) =>
+    JSON.stringify(first.map((item) => item.trim().toLowerCase()).sort()) ===
+    JSON.stringify(second.map((item) => item.trim().toLowerCase()).sort());
+  const analysis = storedAnalysis && sameIngredients(storedAnalysis.allergies, allergies) ? storedAnalysis : null;
+  const value = useMemo(() => ({ analysis, setAnalysis, ageGroup, setAgeGroup, allergies, setAllergies }), [analysis, ageGroup, allergies]);
 
   return <AppState.Provider value={value}>{children}</AppState.Provider>;
 }

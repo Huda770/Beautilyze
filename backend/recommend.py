@@ -1,4 +1,24 @@
+import re
+import unicodedata
+from pathlib import Path
+
 import pandas as pd
+
+BASE_DIR = Path(__file__).resolve().parent
+
+
+def normalize_ingredient(value):
+    """Compare ingredient labels without case, spacing or punctuation differences."""
+    return " ".join(re.findall(r"[^\W_]+", unicodedata.normalize("NFKC", value).casefold()))
+
+
+def contains_avoided_ingredient(ingredients, avoid):
+    # Whole phrases allow labels such as "Niacinamide (Vitamin B3)" while
+    # avoiding substring collisions such as "tea" and "stearic acid".
+    return any(
+        f" {term} " in f" {normalize_ingredient(ingredient)} "
+        for ingredient in ingredients for term in avoid
+    )
 
 # Maps CNN's skin type labels to the CSV's skin type labels
 CNN_TO_CSV_SKIN_TYPE = {
@@ -16,7 +36,7 @@ CNN_TO_PRODUCT_SKIN_TYPE = {
 }
 
 # Load the ingredient recommendation dataset
-df = pd.read_csv('RecLogic.csv')
+df = pd.read_csv(BASE_DIR / 'RecLogic.csv')
 
 def get_ideal_ingredients(skin_type, concerns, age_group):
     """
@@ -43,7 +63,7 @@ def get_ideal_ingredients(skin_type, concerns, age_group):
 import sqlite3
 
 def get_products():
-    conn = sqlite3.connect('skincare.db')
+    conn = sqlite3.connect(BASE_DIR / 'skincare.db')
     cursor = conn.cursor()
     cursor.execute('SELECT name, category, skin_types, ingredients FROM products')
     rows = cursor.fetchall()
@@ -55,21 +75,26 @@ def get_products():
             "name": row[0],
             "category": row[1],
             "skin_types": row[2].split(','),
-            "ingredients": row[3].split(',')
+            "ingredients": [item.strip() for item in (row[3] or "").split(",") if item.strip()]
         })
     return products
 
-def score_products(skin_type, ideal_ingredients):
+def score_products(skin_type, ideal_ingredients, allergies=None):
     """
     Scores each product based on:
     - whether it matches the user's skin type
     - how many of its ingredients overlap with the ideal ingredients
     """
+    avoid = {normalize_ingredient(item) for item in (allergies or []) if isinstance(item, str) and normalize_ingredient(item)}
     scored = []
     products = get_products()
     product_skin_type = CNN_TO_PRODUCT_SKIN_TYPE.get(skin_type, skin_type)
 
     for product in products:
+        # Exclude before scoring; an unknown ingredient list cannot be checked.
+        if avoid and (not product["ingredients"] or contains_avoided_ingredient(product["ingredients"], avoid)):
+            continue
+
         # Skip products that don't suit this skin type at all
         if product_skin_type.lower() not in [s.lower() for s in product["skin_types"]]:
             continue
@@ -91,7 +116,7 @@ def score_products(skin_type, ideal_ingredients):
     return scored
 
 
-def build_routine(skin_type, concerns, age_group , selected_categories=None):
+def build_routine(skin_type, concerns, age_group , selected_categories=None, allergies=None):
     """
     Builds a simple routine: top scoring product per category
     """
@@ -102,7 +127,7 @@ def build_routine(skin_type, concerns, age_group , selected_categories=None):
         ideal_ingredients = get_ideal_ingredients(csv_skin_type, concerns, age_group)
     
     
-    scored_products = score_products(skin_type, ideal_ingredients)
+    scored_products = score_products(skin_type, ideal_ingredients, allergies)
     routine = {}
     for product in scored_products:
         category = product["category"]
@@ -115,6 +140,13 @@ def build_routine(skin_type, concerns, age_group , selected_categories=None):
             routine[category] = product
 
     return routine
+
+
+def get_products_by_name(name):
+    for product in get_products():
+        if product["name"] == name:
+            return product
+    return {"ingredients": []}
 
 
 if __name__ == '__main__':
