@@ -11,6 +11,7 @@ import os
 import sqlite3
 from pathlib import Path
 from recommend import build_routine
+from accounts import create_auth_blueprint, initialize_accounts_database
 import cv2
 import numpy as np
 
@@ -42,6 +43,8 @@ def initialize_product_database():
 
 
 initialize_product_database()
+initialize_accounts_database(BASE_DIR / 'skincare.db')
+app.register_blueprint(create_auth_blueprint(BASE_DIR / 'skincare.db'))
 
 # Load all local validation cascades once. Requiring multiple independent
 # signals reduces false positives from textures and objects in arbitrary photos.
