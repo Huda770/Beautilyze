@@ -9,9 +9,13 @@ from flask_cors import CORS
 import json as json_lib
 import os
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 from recommend import build_routine
 from accounts import create_auth_blueprint, initialize_accounts_database
+from explanations import CONCERN_EXPLANATIONS, explanations_for
+from profile_store import validate_age_group, validate_categories
+from model_config import CLASS_NAMES, IMAGE_SIZE, NORMALIZE_MEAN, NORMALIZE_STD, CHECKPOINT_NAME
 import cv2
 import numpy as np
 
@@ -19,11 +23,11 @@ app = Flask(__name__)
 CORS(app)
 
 BASE_DIR = Path(__file__).resolve().parent
+DATABASE_PATH = BASE_DIR / 'skincare.db'
 
 # Create the local catalogue on first run without overwriting user data
 def initialize_product_database():
-    database = BASE_DIR / 'skincare.db'
-    with sqlite3.connect(database) as connection:
+    with sqlite3.connect(DATABASE_PATH) as connection:
         connection.execute('''
             CREATE TABLE IF NOT EXISTS products (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -46,6 +50,13 @@ initialize_product_database()
 initialize_accounts_database(BASE_DIR / 'skincare.db')
 app.register_blueprint(create_auth_blueprint(BASE_DIR / 'skincare.db'))
 
+
+def get_product_categories():
+    with closing(sqlite3.connect(DATABASE_PATH)) as connection:
+        rows = connection.execute('SELECT DISTINCT category FROM products ORDER BY category').fetchall()
+    return [row[0] for row in rows]
+
+
 # Load all local validation cascades once. Requiring multiple independent
 # signals reduces false positives from textures and objects in arbitrary photos.
 CASCADE_DIR = Path(cv2.data.haarcascades)
@@ -60,9 +71,14 @@ for cascade, filename in (
     if cascade.empty():
         raise RuntimeError(f'OpenCV could not load its required cascade: {CASCADE_DIR / filename}')
 
-# Load class names
-with open('class_names.json', 'r') as f:
-    class_names = json.load(f)
+# Keep the output-neuron order explicit and shared with training/evaluation.
+class_names = list(CLASS_NAMES)
+with open(BASE_DIR / 'class_names.json', 'r') as f:
+    configured_class_names = json.load(f)
+if configured_class_names != class_names:
+    raise RuntimeError(
+        f'class_names.json must match model_config.CLASS_NAMES in order: {class_names}'
+    )
 
 # Rebuild the same model structure used in training
 model = models.resnet18(weights=None)
@@ -72,7 +88,15 @@ model.fc = nn.Sequential(
 )
 
 # Load your trained weights
-model.load_state_dict(torch.load('skin_type_model.pth', map_location='cpu'))
+checkpoint = torch.load(BASE_DIR / CHECKPOINT_NAME, map_location='cpu')
+if tuple(checkpoint['fc.1.weight'].shape) != (len(class_names), model.fc[1].in_features):
+    raise RuntimeError(
+        f'{CHECKPOINT_NAME} output layer does not match {len(class_names)} configured classes: '
+        f"{tuple(checkpoint['fc.1.weight'].shape)}"
+    )
+if tuple(checkpoint['fc.1.bias'].shape) != (len(class_names),):
+    raise RuntimeError(f'{CHECKPOINT_NAME} output bias does not match configured classes')
+model.load_state_dict(checkpoint)
 model.eval()
 
 def contains_face(pil_image):
@@ -123,9 +147,9 @@ def contains_face(pil_image):
 
 
 transform = transforms.Compose([
-    transforms.Resize((224, 224)),
+    transforms.Resize((IMAGE_SIZE, IMAGE_SIZE)),
     transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    transforms.Normalize(mean=NORMALIZE_MEAN, std=NORMALIZE_STD)
 ])
 
 
@@ -136,6 +160,7 @@ def health():
         'model_loaded': True,
         'face_detection': 'opencv-haar-consensus-eye',
     })
+
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -157,7 +182,7 @@ def predict():
         app.logger.exception('Local OpenCV face detection failed')
         return jsonify({'error': f'Image processing failed: {exc}'}), 422
     if not face_detected:
-        return jsonify({"error": "No face detected. Please upload a clear photo of a face."}), 400
+        return jsonify({"error": "No face detected. Please upload another image with your face clearly visible."}), 400
     print("4. Face detection done")
 
     tensor = transform(img).unsqueeze(0)
@@ -173,11 +198,19 @@ def predict():
     low_confidence = confidence.item() < 0.5
 
     try:
-        concerns = json_lib.loads(request.form.get('concerns', '[]'))
         selected_categories = json_lib.loads(request.form.get('categories', '[]'))
+        concerns = json_lib.loads(request.form.get('concerns', '[]'))
     except (TypeError, ValueError):
         return jsonify({'error': 'Invalid analysis options.'}), 400
-    age_group = request.form.get('age_group', '14-18')
+    if not isinstance(concerns, list) or not concerns or any(not isinstance(item, str) for item in concerns):
+        return jsonify({'error': 'Please select at least one supported skin goal.'}), 400
+    concerns = list(dict.fromkeys(concerns))
+    unsupported_concerns = [item for item in concerns if item not in CONCERN_EXPLANATIONS]
+    if unsupported_concerns:
+        return jsonify({'error': 'One or more selected skin goals are not supported.'}), 400
+    if 'No Skin Concerns' in concerns and len(concerns) != 1:
+        return jsonify({'error': '“No Skin Concerns” cannot be combined with another goal.'}), 400
+
     try:
         allergies = json_lib.loads(request.form.get('allergies', '[]'))
         sensitivities = json_lib.loads(request.form.get('sensitivities', '[]'))
@@ -188,8 +221,15 @@ def predict():
     except (ValueError, TypeError):
         return jsonify({"error": "Invalid ingredient preferences format."}), 400
 
-    if not concerns:
-        return jsonify({"error": "Please select at least one skin concern."}), 400
+    try:
+        selected_categories = validate_categories(selected_categories, get_product_categories())
+        request_age_group = validate_age_group(request.form.get('age_group', '19-25'))
+    except ValueError as exc:
+        return jsonify({'error': str(exc)}), 400
+
+    age_group = request_age_group
+    preferred_categories = None
+    strict_categories = selected_categories or None
 
     combined_avoid_list = allergies + sensitivities
     routine_concerns = ['General'] if concerns == ['No Skin Concerns'] else concerns
@@ -197,12 +237,23 @@ def predict():
         predicted_skin_type,
         routine_concerns,
         age_group,
-        selected_categories,
-        allergies=combined_avoid_list)
+        selected_categories=strict_categories,
+        allergies=combined_avoid_list,
+        preferred_categories=preferred_categories,
+    )
 
-    response = {"routine": routine, "skin_type": predicted_skin_type, "confidence": confidence.item()}
+    response = {
+        "routine": routine,
+        "skin_type": predicted_skin_type,
+        "confidence": confidence.item(),
+        "result_reliable": not low_confidence,
+        "explanations": explanations_for(predicted_skin_type, concerns),
+        "preferred_categories": preferred_categories or [],
+    }
     if low_confidence:
-        response["note"] = "Analysis confidence was low — for best results, use a clear, well-lit front-facing photo."
+        response["note"] = "This result is uncertain. Try another clear, well-lit front-facing photo; the model's confidence is not medical certainty."
+    if not routine:
+        response["recommendation_note"] = "No matching products were found in the current catalogue for this result and these goals."
 
     return jsonify(response)
 

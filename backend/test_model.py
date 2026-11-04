@@ -2,11 +2,11 @@ import torch
 import torch.nn as nn
 from torchvision import models, transforms
 from PIL import Image
-import json
+from model_config import CLASS_NAMES, IMAGE_SIZE, NORMALIZE_MEAN, NORMALIZE_STD, CHECKPOINT_NAME
 
 # Load class names
 
-class_names = ["combination", "dry", "oily"]
+class_names = list(CLASS_NAMES)
 
 # Rebuild the same model structure used in training
 model = models.resnet18(weights=None)
@@ -16,13 +16,13 @@ model.fc = nn.Sequential(
 )
 
 # Load trained weights
-model.load_state_dict(torch.load('skin_type_model.pth', map_location='cpu'))
+model.load_state_dict(torch.load(CHECKPOINT_NAME, map_location='cpu'))
 model.eval()
 
 transform = transforms.Compose([
-    transforms.Resize((224, 224)),
+    transforms.Resize((IMAGE_SIZE, IMAGE_SIZE)),
     transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    transforms.Normalize(mean=NORMALIZE_MEAN, std=NORMALIZE_STD)
 ])
 
 # CHANGE THIS to the path of the image you want to test

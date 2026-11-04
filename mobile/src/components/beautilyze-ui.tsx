@@ -1,11 +1,16 @@
 import { PropsWithChildren, ReactNode } from 'react';
 import { Pressable, PressableProps, StyleSheet, Text, TextProps, View, ViewProps } from 'react-native';
 
-// Shared colors keep the main screens visually consistent.
+// Shared brand colors from the Beautilyze logo: cream, blush, mauve, and soft lavender.
 export const palette = {
-  ink: '#26362F', muted: '#7B8980', green: '#456A56', greenDark: '#314F3E',
-  mint: '#EAF1E9', cream: '#F8F7F2', white: '#FFFFFF', line: '#E6E9E2',
-  peach: '#F3E4D9', gold: '#B9935B', danger: '#A85047',
+  ink: '#3C2633', muted: '#6F6370', accent: '#61435C', accentDark: '#4A3046',
+  soft: '#F6E4E3', lavender: '#E9E1F2', cream: '#FDF8F6', white: '#FFFFFF', line: '#EADDDB',
+  blush: '#EFC9C6', lilac: '#B9A3D1', plum: '#65427B', danger: '#A6423A',
+};
+
+// DM Serif Display for headlines and DM Sans for everything else, loaded in the root layout.
+export const fonts = {
+  serif: 'DMSerifDisplay_400Regular', regular: 'DMSans_400Regular', medium: 'DMSans_500Medium', bold: 'DMSans_700Bold',
 };
 
 export function Screen({ children, ...props }: PropsWithChildren<ViewProps>) {
@@ -29,7 +34,7 @@ export function Body({ children, style, ...props }: PropsWithChildren<TextProps>
 }
 
 export function Button({ title, secondary, icon, ...props }: PressableProps & { title: string; secondary?: boolean; icon?: ReactNode }) {
-  return <Pressable accessibilityRole="button" {...props} style={({ pressed }) => [styles.button, secondary && styles.buttonSecondary, props.style as object, pressed && styles.pressed]}>{icon}{<Text style={[styles.buttonText, secondary && styles.buttonTextSecondary]}>{title}</Text>}</Pressable>;
+  return <Pressable accessibilityRole="button" {...props} style={({ pressed }) => [styles.button, secondary && styles.buttonSecondary, props.style as object, props.disabled && { opacity: 0.5 }, pressed && styles.pressed]}>{icon}{<Text style={[styles.buttonText, secondary && styles.buttonTextSecondary]}>{title}</Text>}</Pressable>;
 }
 
 // Shared layout, text, button, and chip styles for the app.
@@ -37,20 +42,20 @@ export const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: palette.cream },
   scroll: { paddingHorizontal: 22, paddingTop: 20, paddingBottom: 42, gap: 16 },
   pageTitle: { gap: 7, marginBottom: 4 },
-  eyebrow: { color: palette.green, fontSize: 11, fontWeight: '800', letterSpacing: 2 },
-  title: { color: palette.ink, fontSize: 32, lineHeight: 38, fontWeight: '700', letterSpacing: -0.7 },
-  subtitle: { color: palette.muted, fontSize: 15, lineHeight: 22 },
-  card: { backgroundColor: palette.white, borderRadius: 20, padding: 18, borderWidth: 1, borderColor: palette.line, gap: 10 },
-  label: { color: palette.ink, fontSize: 16, fontWeight: '700' },
-  body: { color: palette.muted, fontSize: 14, lineHeight: 21 },
-  button: { minHeight: 54, borderRadius: 15, paddingHorizontal: 20, backgroundColor: palette.green, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9 },
-  buttonSecondary: { backgroundColor: palette.mint, borderWidth: 1, borderColor: '#D5E1D3' },
-  buttonText: { color: palette.white, fontSize: 15, fontWeight: '700' },
-  buttonTextSecondary: { color: palette.greenDark },
+  eyebrow: { color: palette.accent, fontSize: 12, fontFamily: fonts.bold, letterSpacing: 1.6 },
+  title: { color: palette.ink, fontSize: 34, lineHeight: 40, fontFamily: fonts.serif },
+  subtitle: { color: palette.muted, fontSize: 15, lineHeight: 22, fontFamily: fonts.regular },
+  card: { backgroundColor: palette.white, borderRadius: 24, padding: 20, borderWidth: 1, borderColor: palette.line, gap: 10 },
+  label: { color: palette.ink, fontSize: 16, fontFamily: fonts.bold },
+  body: { color: palette.muted, fontSize: 14, lineHeight: 21, fontFamily: fonts.regular },
+  button: { minHeight: 54, borderRadius: 20, paddingHorizontal: 20, backgroundColor: palette.accent, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9 },
+  buttonSecondary: { backgroundColor: palette.white, borderWidth: 1.5, borderColor: palette.accent },
+  buttonText: { color: palette.white, fontSize: 15, fontFamily: fonts.bold },
+  buttonTextSecondary: { color: palette.accentDark },
   pressed: { opacity: 0.78 },
   chip: { paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: palette.line, borderRadius: 20, backgroundColor: palette.white },
-  chipSelected: { backgroundColor: palette.green, borderColor: palette.green },
-  chipText: { color: palette.ink, fontSize: 13, fontWeight: '600' },
+  chipSelected: { backgroundColor: palette.accent, borderColor: palette.accent },
+  chipText: { color: palette.ink, fontSize: 13, fontFamily: fonts.medium },
   chipTextSelected: { color: palette.white },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
 });

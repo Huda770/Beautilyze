@@ -3,9 +3,9 @@ import unicodedata
 from pathlib import Path
 
 import pandas as pd
+import sqlite3
 
 BASE_DIR = Path(__file__).resolve().parent
-
 
 def normalize_ingredient(value):
     """Compare ingredient labels without case, spacing or punctuation differences."""
@@ -35,6 +35,22 @@ CNN_TO_PRODUCT_SKIN_TYPE = {
     "combination": "combination-skin",
 }
 
+# Match the app's broad age ranges to the groups actually present in RecLogic.csv.
+# “Prefer not to say” deliberately skips age filtering.
+AGE_GROUP_TO_DATASET = {
+    'Under 18': '14-18',
+    '18-24': '19-24',
+    '25-34': '25-36',
+    '35-44': '37-45',
+    '45 and above': '45+',
+    'Prefer not to say': None,
+    '14-18': '14-18',
+    '19-24': '19-24',
+    '25-36': '25-36',
+    '37-45': '37-45',
+    '45+': '45+',
+}
+
 # Load the ingredient recommendation dataset
 df = pd.read_csv(BASE_DIR / 'RecLogic.csv')
 
@@ -44,11 +60,14 @@ def get_ideal_ingredients(skin_type, concerns, age_group):
     concerns: list of strings, e.g. ['Acne', 'Dullness']
     age_group: string, e.g. '14-18'
     """
-    filtered = df[
+    dataset_age_group = AGE_GROUP_TO_DATASET.get(age_group, age_group)
+    mask = (
         (df['Skin_Type'].str.lower() == skin_type.lower()) &
-        (df['Age_Group'] == age_group) &
         (df['Concern'].str.lower().isin([c.lower() for c in concerns]))
-    ]
+    )
+    if dataset_age_group:
+        mask &= df['Age_Group'] == dataset_age_group
+    filtered = df[mask]
 
     ingredient_set = set()
     for ingredients_text in filtered['Ingredients']:
@@ -62,8 +81,8 @@ def get_ideal_ingredients(skin_type, concerns, age_group):
 
 import sqlite3
 
-def get_products():
-    conn = sqlite3.connect(BASE_DIR / 'skincare.db')
+def get_products(database_path=None):
+    conn = sqlite3.connect(database_path or BASE_DIR / 'skincare.db')
     cursor = conn.cursor()
     cursor.execute('SELECT name, category, skin_types, ingredients FROM products')
     rows = cursor.fetchall()
@@ -79,7 +98,7 @@ def get_products():
         })
     return products
 
-def score_products(skin_type, ideal_ingredients, allergies=None):
+def score_products(skin_type, ideal_ingredients, allergies=None, database_path=None):
     """
     Scores each product based on:
     - whether it matches the user's skin type
@@ -87,7 +106,7 @@ def score_products(skin_type, ideal_ingredients, allergies=None):
     """
     avoid = {normalize_ingredient(item) for item in (allergies or []) if isinstance(item, str) and normalize_ingredient(item)}
     scored = []
-    products = get_products()
+    products = get_products(database_path) if database_path else get_products()
     product_skin_type = CNN_TO_PRODUCT_SKIN_TYPE.get(skin_type, skin_type)
 
     for product in products:
@@ -116,7 +135,14 @@ def score_products(skin_type, ideal_ingredients, allergies=None):
     return scored
 
 
-def build_routine(skin_type, concerns, age_group , selected_categories=None, allergies=None):
+def build_routine(
+    skin_type,
+    concerns,
+    age_group,
+    selected_categories=None,
+    allergies=None,
+    preferred_categories=None,
+):
     """
     Builds a simple routine: top scoring product per category
     """
@@ -139,6 +165,12 @@ def build_routine(skin_type, concerns, age_group , selected_categories=None, all
         if category not in routine:
             routine[category] = product
 
+    if preferred_categories:
+        preference_order = {category: index for index, category in enumerate(preferred_categories)}
+        routine = dict(sorted(
+            routine.items(),
+            key=lambda item: preference_order.get(item[0], len(preference_order)),
+        ))
     return routine
 
 

@@ -10,13 +10,14 @@ The older web app is in `../frontend/`.
 
 - `_layout.tsx` sets up the app's shared state, theme, splash screen, and tabs.
 - `index.tsx` is the Home screen and links to analysis and the latest result.
-- `analyze.tsx` chooses a photo, collects preferences, and sends them to `/predict`.
-- `routine.tsx` displays the skin result and recommended products.
-- `profile.tsx` stores the age preference and checks `/health`.
+- `analyze.tsx` chooses a photo, collects user-selected skin goals, and sends them with the app install ID to `/predict`.
+- `routine.tsx` explains the skin type estimate and selected goals, then displays recommended products.
+- `profile.tsx` provides account registration, sign-in, sign-out, age preference, and allergy/sensitivity controls.
 
 ### Shared app code — `src/`
 
-- `state/app-state.tsx` keeps the age range and latest result while the app is open.
+- `state/app-state.tsx` restores the signed-in account and keeps the latest analysis and ingredient exclusions while the app is open.
+- `constants/profile-options.ts` lists the age groups, goals, and categories supported by the current backend data.
 - `constants/api.ts` finds the backend address for the phone or uses the optional
   `EXPO_PUBLIC_API_URL` setting.
 - `constants/theme.ts` defines the shared web theme colors, fonts, and spacing.
@@ -44,5 +45,11 @@ JSON files such as `app.json` cannot contain comments, so their purpose is descr
 ## Run it
 
 Start the backend from `../backend/` with `python app.py`, then start the mobile app
-from this folder with `npm start -- --lan`. Scan the Expo Go QR code while the phone
-and computer are on the same Wi-Fi network. See the main project `README.md` for details.
+from this folder with `npm start -- --lan`. The API address follows Expo's current LAN
+host, so it updates when the laptop's Wi-Fi address changes. Scan the Expo Go QR code
+while the phone and computer are on the same Wi-Fi network. See the main project
+`README.md` for details.
+
+The backend reuses `../backend/skincare.db` and creates account/session tables when it
+starts. Existing product rows are preserved. Account sign-in works across app launches;
+the latest analysis and ingredient exclusions remain in app memory for the current session.

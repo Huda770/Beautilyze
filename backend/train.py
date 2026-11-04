@@ -3,41 +3,45 @@ import torch.nn as nn
 import torch.optim as optim
 from torchvision import datasets, models, transforms
 from torch.utils.data import DataLoader
+import json
+from pathlib import Path
+from model_config import CLASS_NAMES, IMAGE_SIZE, NORMALIZE_MEAN, NORMALIZE_STD
 
 
 
 # Training transform - includes augmentation to prevent memorization
 train_transform = transforms.Compose([
     # Random crop/zoom varies framing without touching color or brightness
-    transforms.RandomResizedCrop(224, scale=(0.8, 1.0)),
+    transforms.RandomResizedCrop(IMAGE_SIZE, scale=(0.8, 1.0)),
     transforms.RandomHorizontalFlip(),
     transforms.RandomRotation(10),
     # No ColorJitter: brightness/contrast are key cues for oily vs dry vs combination
     transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    transforms.Normalize(mean=NORMALIZE_MEAN, std=NORMALIZE_STD)
 ])
 
 # Validation transform - no augmentation, just resize/normalize
 valid_transform = transforms.Compose([
-    transforms.Resize((224, 224)),
+    transforms.Resize((IMAGE_SIZE, IMAGE_SIZE)),
     transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    transforms.Normalize(mean=NORMALIZE_MEAN, std=NORMALIZE_STD)
 ])
 
-# Use the dataset's own splits: all 600 train images for training,
-# the 150-image official validation split for validation.
-# The test split is kept out entirely so it stays unseen for the final comparison.
+# Use separate train and validation folders. Keep any test split completely
+# outside this script so it remains unseen during model selection.
 train_data = datasets.ImageFolder('Dataset/train', transform=train_transform)
 valid_data = datasets.ImageFolder('Dataset/valid', transform=valid_transform)
 
 # Both folders must have the same class folders, or labels would not line up
 assert train_data.classes == valid_data.classes, \
     f"Class mismatch: train={train_data.classes}, valid={valid_data.classes}"
+assert tuple(train_data.classes) == CLASS_NAMES, \
+    f"Expected class folders in this exact order: {CLASS_NAMES}; found {train_data.classes}"
 
 train_loader = DataLoader(train_data, batch_size=32, shuffle=True)
 valid_loader = DataLoader(valid_data, batch_size=32, shuffle=False)
 
-class_names = train_data.classes
+class_names = list(CLASS_NAMES)
 num_classes = len(class_names)
 
 print("Classes found:", class_names)
@@ -136,13 +140,13 @@ for epoch in range(num_epochs):
     # Save the model only when validation accuracy improves
     if valid_accuracy > best_valid_accuracy:
         best_valid_accuracy = valid_accuracy
-        torch.save(model.state_dict(), 'skin_type_model.pth')
-        print("  New best model saved as skin_type_model.pth")
+        torch.save(model.state_dict(), 'skin_type_model_3class.pth')
+        print("  New best model saved as skin_type_model_3class.pth")
 
 print(f"Best Validation Accuracy: {best_valid_accuracy:.2f}%")
 
 # Per-class accuracy of the best saved model on the validation set
-model.load_state_dict(torch.load('skin_type_model.pth', map_location=device))
+model.load_state_dict(torch.load('skin_type_model_3class.pth', map_location=device))
 model.eval()
 class_correct = torch.zeros(num_classes)
 class_total = torch.zeros(num_classes)

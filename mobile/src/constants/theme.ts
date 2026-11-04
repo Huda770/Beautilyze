@@ -10,18 +10,18 @@ import { Platform } from 'react-native';
 // Theme colors and spacing are shared by themed components and tab bars.
 export const Colors = {
   light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
+    text: '#3C2633',
+    background: '#FDF8F6',
+    backgroundElement: '#F6E4E3',
+    backgroundSelected: '#E9E1F2',
+    textSecondary: '#6F6370',
   },
   dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
+    text: '#FDF8F6',
+    background: '#261A24',
+    backgroundElement: '#36263A',
+    backgroundSelected: '#4A3448',
+    textSecondary: '#CDBFD0',
   },
 } as const;
 

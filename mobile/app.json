@@ -8,7 +8,12 @@
     "scheme": "beautilyze",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/images/ios-icon.png",
+      "supportsTablet": false,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.huda770.beautilyze"
     },
     "android": {
       "adaptiveIcon": {
@@ -28,11 +33,20 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "backgroundColor": "#FDF8F6",
+          "image": "./assets/images/beautilyze-logo.png",
+          "imageWidth": 160
         }
-      ]
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Beautilyze uses a photo you choose of your face to estimate your skin type and suggest products.",
+          "cameraPermission": "Beautilyze uses the camera to take a photo of your face to estimate your skin type and suggest products.",
+          "microphonePermission": false
+        }
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,

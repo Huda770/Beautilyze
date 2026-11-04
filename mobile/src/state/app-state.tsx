@@ -2,6 +2,7 @@ import { createContext, PropsWithChildren, useContext, useEffect, useMemo, useSt
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { API_URL } from '@/constants/api';
+import type { RoutineKey } from '@/constants/routines';
 
 const SESSION_KEY = 'beautilyze.auth-token';
 
@@ -15,19 +16,31 @@ export type ProductRecommendation = {
 export type Analysis = {
   skin_type: string;
   confidence?: number;
+  result_reliable?: boolean;
+  note?: string;
+  recommendation_note?: string;
+  explanations?: { skin_type?: string; selected_concerns?: Record<string, string> };
+  preferredCategories?: string[];
   routine?: Record<string, ProductRecommendation>;
   createdAt: string;
   ageGroup: string;
   concerns: string[];
-  // Combined allergy and sensitivity exclusions.
   allergies: string[];
 };
 
-export type Account = { id: number; email: string; age_group: string };
+export type RoutineItem = ProductRecommendation & { explanation?: string; addedAt: string };
+export type RoutineAssignments = Record<RoutineKey, RoutineItem[]>;
+const emptyRoutines = (): RoutineAssignments => ({ Morning: [], Night: [], Weekly: [] });
+const productId = (product: Pick<ProductRecommendation, 'name' | 'category'>) => `${product.category}::${product.name}`.trim().toLowerCase();
+export const isSameProduct = (a: Pick<ProductRecommendation, 'name' | 'category'>, b: Pick<ProductRecommendation, 'name' | 'category'>) => productId(a) === productId(b);
 
+export type Account = { id: number; email: string; age_group: string };
 type AuthResult = { user: Account; token: string };
+
 type AppStateValue = {
   analysis: Analysis | null;
+  /** The most recent analysis, kept even when current preferences no longer match it (used on Home). */
+  latestAnalysis: Analysis | null;
   setAnalysis: (analysis: Analysis | null) => void;
   ageGroup: string;
   setAgeGroup: (ageGroup: string) => void;
@@ -37,16 +50,21 @@ type AppStateValue = {
   clearAuthError: () => void;
   signIn: (email: string, password: string, register?: boolean) => Promise<void>;
   signOut: () => Promise<void>;
-  // Combined allergy and sensitivity exclusions.
   allergies: string[];
   setAllergies: (allergies: string[]) => void;
+  concerns: string[];
+  setConcerns: (concerns: string[]) => void;
+  routineAssignments: RoutineAssignments;
+  /** Adds a product to a routine; returns false if it was already there. */
+  addToRoutine: (routine: RoutineKey, product: ProductRecommendation, explanation?: string) => boolean;
+  removeFromRoutine: (routine: RoutineKey, product: ProductRecommendation) => void;
 };
 
 const AppState = createContext<AppStateValue | null>(null);
+const normalizeList = (items: string[]) => JSON.stringify(items.map((item) => item.trim().toLowerCase()).sort());
 
 async function readToken() {
-  if (Platform.OS === 'web') return null;
-  return SecureStore.getItemAsync(SESSION_KEY);
+  return Platform.OS === 'web' ? null : SecureStore.getItemAsync(SESSION_KEY);
 }
 
 async function saveToken(token: string) {
@@ -57,10 +75,10 @@ async function removeToken() {
   if (Platform.OS !== 'web') await SecureStore.deleteItemAsync(SESSION_KEY);
 }
 
-async function apiRequest(path: string, token: string, init: Omit<RequestInit, 'headers'> = {}) {
+async function apiRequest(path: string, token: string, init: RequestInit = {}) {
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...init.headers },
   });
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || 'The request could not be completed.');
@@ -68,12 +86,17 @@ async function apiRequest(path: string, token: string, init: Omit<RequestInit, '
 }
 
 export function AppStateProvider({ children }: PropsWithChildren) {
-  const [analysis, setAnalysis] = useState<Analysis | null>(null);
+  const [storedAnalysis, setAnalysis] = useState<Analysis | null>(null);
   const [ageGroup, setAgeGroupState] = useState('19-25');
   const [account, setAccount] = useState<Account | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [authError, setAuthError] = useState('');
+  const [allergies, setAllergies] = useState<string[]>([]);
+  const [concerns, setConcerns] = useState<string[]>([]);
+  const [routineAssignments, setRoutineAssignments] = useState<RoutineAssignments>(emptyRoutines);
+  const analysis = storedAnalysis && normalizeList(storedAnalysis.allergies || []) === normalizeList(allergies)
+    ? storedAnalysis : null;
 
   useEffect(() => {
     let active = true;
@@ -104,8 +127,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
   async function signIn(email: string, password: string, register = false) {
     setAuthError('');
     const response = await fetch(`${API_URL}/auth/${register ? 'register' : 'login'}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
     const data = await response.json();
@@ -115,6 +137,9 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     setToken(result.token);
     setAccount(result.user);
     setAgeGroupState(result.user.age_group);
+    setAllergies([]);
+    setAnalysis(null);
+    setRoutineAssignments(emptyRoutines());
   }
 
   async function setAgeGroup(value: string) {
@@ -141,24 +166,26 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       setAccount(null);
       setToken(null);
       setAnalysis(null);
+      setAllergies([]);
+      setRoutineAssignments(emptyRoutines());
     }
   }
 
+  function addToRoutine(routine: RoutineKey, product: ProductRecommendation, explanation?: string) {
+    if (routineAssignments[routine].some((item) => isSameProduct(item, product))) return false;
+    setRoutineAssignments((current) => current[routine].some((item) => isSameProduct(item, product)) ? current
+      : { ...current, [routine]: [...current[routine], { ...product, explanation, addedAt: new Date().toISOString() }] });
+    return true;
+  }
+
+  function removeFromRoutine(routine: RoutineKey, product: ProductRecommendation) {
+    setRoutineAssignments((current) => ({ ...current, [routine]: current[routine].filter((item) => !isSameProduct(item, product)) }));
+  }
+
   const value = useMemo(() => ({
-    analysis, setAnalysis, ageGroup, setAgeGroup, account, authReady, authError,
-    clearAuthError: () => setAuthError(''), signIn, signOut,
-  }), [analysis, ageGroup, account, authReady, authError, token]);
-// Keep the selected age range, latest analysis, and ingredient filters for this session.
-export function AppStateProvider({ children }: PropsWithChildren) {
-  const [storedAnalysis, setAnalysis] = useState<Analysis | null>(null);
-  const [ageGroup, setAgeGroup] = useState('19-25');
-  const [allergies, setAllergies] = useState<string[]>([]);
-  // Hide stale results, including a request completed after preferences changed.
-  const sameIngredients = (first: string[], second: string[]) =>
-    JSON.stringify(first.map((item) => item.trim().toLowerCase()).sort()) ===
-    JSON.stringify(second.map((item) => item.trim().toLowerCase()).sort());
-  const analysis = storedAnalysis && sameIngredients(storedAnalysis.allergies, allergies) ? storedAnalysis : null;
-  const value = useMemo(() => ({ analysis, setAnalysis, ageGroup, setAgeGroup, allergies, setAllergies }), [analysis, ageGroup, allergies]);
+    analysis, latestAnalysis: storedAnalysis, setAnalysis, ageGroup, setAgeGroup, account, authReady, authError,
+    clearAuthError: () => setAuthError(''), signIn, signOut, allergies, setAllergies, concerns, setConcerns, routineAssignments, addToRoutine, removeFromRoutine,
+  }), [analysis, storedAnalysis, ageGroup, account, authReady, authError, token, allergies, concerns, routineAssignments]);
 
   return <AppState.Provider value={value}>{children}</AppState.Provider>;
 }
