@@ -1,11 +1,13 @@
 import { createContext, PropsWithChildren, useContext, useEffect, useMemo, useState } from 'react';
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
-import { API_URL } from '@/constants/api';
+import { API_URL, readJsonResponse } from '@/constants/api';
+import { DEFAULT_AGE_GROUP } from '@/constants/profile-options';
 import type { RoutineKey } from '@/constants/routines';
 
 const SESSION_KEY = 'beautilyze.auth-token';
 
+// Analysis, routine and account types shared by the screens.
 export type ProductRecommendation = {
   name: string;
   category: string;
@@ -61,6 +63,8 @@ type AppStateValue = {
 };
 
 const AppState = createContext<AppStateValue | null>(null);
+
+// Session-token storage (SecureStore on native; web keeps no token) and authenticated API calls.
 const normalizeList = (items: string[]) => JSON.stringify(items.map((item) => item.trim().toLowerCase()).sort());
 
 async function readToken() {
@@ -80,14 +84,13 @@ async function apiRequest(path: string, token: string, init: RequestInit = {}) {
     ...init,
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...init.headers },
   });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error || 'The request could not be completed.');
-  return data;
+  return readJsonResponse(response, 'The request could not be completed.');
 }
 
+// Provider holding the account session, preferences, latest analysis and routines in memory.
 export function AppStateProvider({ children }: PropsWithChildren) {
   const [storedAnalysis, setAnalysis] = useState<Analysis | null>(null);
-  const [ageGroup, setAgeGroupState] = useState('19-25');
+  const [ageGroup, setAgeGroupState] = useState<string>(DEFAULT_AGE_GROUP);
   const [account, setAccount] = useState<Account | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
@@ -130,9 +133,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'We could not sign you in.');
-    const result = data as AuthResult;
+    const result = await readJsonResponse(response, 'We could not sign you in.') as AuthResult;
     await saveToken(result.token);
     setToken(result.token);
     setAccount(result.user);
@@ -190,6 +191,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
   return <AppState.Provider value={value}>{children}</AppState.Provider>;
 }
 
+// Hook for screens to read and update the shared app state.
 export function useAppState() {
   const value = useContext(AppState);
   if (!value) throw new Error('useAppState must be used inside AppStateProvider');

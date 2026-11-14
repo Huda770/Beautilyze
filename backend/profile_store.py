@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
+# Accepted age labels and the anonymous install ID format.
 AGE_GROUPS = (
     'Under 18',
     '18-24',
@@ -26,6 +27,7 @@ USER_ID_PATTERN = re.compile(
 )
 
 
+# Profile table setup and input validation shared with /predict.
 def initialize_profile_table(database_path: str | Path) -> None:
     """Create the profile table without changing existing product records."""
     with closing(sqlite3.connect(database_path)) as connection:
@@ -73,6 +75,7 @@ def validate_categories(categories: object, supported_categories) -> list[str]:
     return list(dict.fromkeys(categories))
 
 
+# Reading and saving anonymous profiles (not currently exposed by app.py).
 def get_profile(user_id: str, database_path: str | Path, supported_categories=None) -> dict:
     """Return a saved profile, or safe defaults for a new install."""
     with closing(sqlite3.connect(database_path)) as connection:

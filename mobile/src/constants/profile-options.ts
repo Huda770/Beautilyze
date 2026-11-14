@@ -1,23 +1,8 @@
-// These values match the age groups and product categories supported by the backend.
-export const AGE_GROUPS = [
-  'Under 18',
-  '18-24',
-  '25-34',
-  '35-44',
-  '45 and above',
-  'Prefer not to say',
-] as const;
+// Age ranges accepted by the account API (backend/accounts.py AGE_GROUPS).
+export const AGE_GROUPS = ['14-18', '19-25', '26-35', '36-45', '45+'] as const;
+export const DEFAULT_AGE_GROUP = '19-25';
 
-// Read from the current skincare.db product catalogue: no unsupported categories are offered.
-export const PRODUCT_CATEGORIES = [
-  'cleanser',
-  'moisturizer',
-  'serum',
-  'sunscreen',
-  'toner',
-  'treatment',
-] as const;
-
+// Skin goals with explanations in backend/explanations.py.
 export const SKIN_GOALS = [
   'Acne',
   'Dark Circles',

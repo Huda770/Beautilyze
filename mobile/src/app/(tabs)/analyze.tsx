@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { Link } from 'expo-router';
 import { Body, Button, Card, Label, PageTitle, palette, Screen, styles } from '@/components/beautilyze-ui';
-import { API_URL } from '@/constants/api';
+import { API_URL, readJsonResponse } from '@/constants/api';
 import { useAppState } from '@/state/app-state';
 
 export default function AnalyzeScreen() {
@@ -38,8 +38,7 @@ export default function AnalyzeScreen() {
       form.append('concerns', JSON.stringify(concerns));
       form.append('allergies', JSON.stringify(allergies));
       const response = await expoFetch(`${API_URL}/predict`, { method: 'POST', body: form });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'We could not analyze this photo. Try another clear face photo.');
+      const data = await readJsonResponse(response, 'We could not analyze this photo. Try another clear face photo.');
       setAnalysis({
         skin_type: data.skin_type, confidence: data.confidence, result_reliable: data.result_reliable,
         note: data.note, recommendation_note: data.recommendation_note, explanations: data.explanations,

@@ -1,14 +1,19 @@
+"""Fine-tune ResNet18 on Dataset/train, select on Dataset/valid, and save skin_type_model_3class.pth."""
+
+from pathlib import Path
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torchvision import datasets, models, transforms
 from torch.utils.data import DataLoader
-import json
-from pathlib import Path
-from model_config import CLASS_NAMES, IMAGE_SIZE, NORMALIZE_MEAN, NORMALIZE_STD
+from torchvision import datasets, transforms
 
+from model_config import CLASS_NAMES, IMAGE_SIZE, NORMALIZE_MEAN, NORMALIZE_STD, build_model, inference_transform
 
+BASE_DIR = Path(__file__).resolve().parent
+CANDIDATE_PATH = BASE_DIR / 'skin_type_model_3class.pth'
 
+# Data: augmented training images and plain validation images in the configured class order.
 # Training transform - includes augmentation to prevent memorization
 train_transform = transforms.Compose([
     # Random crop/zoom varies framing without touching color or brightness
@@ -21,16 +26,12 @@ train_transform = transforms.Compose([
 ])
 
 # Validation transform - no augmentation, just resize/normalize
-valid_transform = transforms.Compose([
-    transforms.Resize((IMAGE_SIZE, IMAGE_SIZE)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=NORMALIZE_MEAN, std=NORMALIZE_STD)
-])
+valid_transform = inference_transform()
 
 # Use separate train and validation folders. Keep any test split completely
 # outside this script so it remains unseen during model selection.
-train_data = datasets.ImageFolder('Dataset/train', transform=train_transform)
-valid_data = datasets.ImageFolder('Dataset/valid', transform=valid_transform)
+train_data = datasets.ImageFolder(BASE_DIR / 'Dataset' / 'train', transform=train_transform)
+valid_data = datasets.ImageFolder(BASE_DIR / 'Dataset' / 'valid', transform=valid_transform)
 
 # Both folders must have the same class folders, or labels would not line up
 assert train_data.classes == valid_data.classes, \
@@ -52,8 +53,8 @@ print("Number of validation images:", len(valid_data))
 class_counts = torch.bincount(torch.tensor(train_data.targets), minlength=num_classes)
 print("Training images per class:", dict(zip(class_names, class_counts.tolist())))
 
-# Load pretrained ResNet
-model = models.resnet18(weights='IMAGENET1K_V1')
+# Model: pretrained ResNet18 with only layer4 and the new head trainable.
+model = build_model(num_classes, weights='IMAGENET1K_V1')
 
 # Freeze all layers first
 for param in model.parameters():
@@ -63,15 +64,9 @@ for param in model.parameters():
 for param in model.layer4.parameters():
     param.requires_grad = True
 
-# Replace final layer with dropout + linear
-model.fc = nn.Sequential(
-    nn.Dropout(0.5),
-    nn.Linear(model.fc.in_features, num_classes)
-)
-
-
-
-
+# The new dropout + linear head stays trainable
+for param in model.fc.parameters():
+    param.requires_grad = True
 
 # Use GPU if available, otherwise CPU
 device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
@@ -92,7 +87,7 @@ optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()),
 # so the model takes smaller, steadier steps later in training
 scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
 
-# Training loop
+# Training loop, keeping the checkpoint with the best validation accuracy.
 num_epochs = 20
 best_valid_accuracy = 0.0
 
@@ -140,13 +135,13 @@ for epoch in range(num_epochs):
     # Save the model only when validation accuracy improves
     if valid_accuracy > best_valid_accuracy:
         best_valid_accuracy = valid_accuracy
-        torch.save(model.state_dict(), 'skin_type_model_3class.pth')
+        torch.save(model.state_dict(), CANDIDATE_PATH)
         print("  New best model saved as skin_type_model_3class.pth")
 
 print(f"Best Validation Accuracy: {best_valid_accuracy:.2f}%")
 
 # Per-class accuracy of the best saved model on the validation set
-model.load_state_dict(torch.load('skin_type_model_3class.pth', map_location=device))
+model.load_state_dict(torch.load(CANDIDATE_PATH, map_location=device, weights_only=True))
 model.eval()
 class_correct = torch.zeros(num_classes)
 class_total = torch.zeros(num_classes)

@@ -1,6 +1,6 @@
 import { Link } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
-import { Body, Button, Card, Label, PageTitle, fonts, palette, Screen, styles } from '@/components/beautilyze-ui';
+import { Body, Button, Card, Label, fonts, palette, Screen, styles } from '@/components/beautilyze-ui';
 import { useAppState } from '@/state/app-state';
 
 // The home screen links to analysis and shows the latest in-memory result.

@@ -1,38 +1,17 @@
+"""Rebuild the products table in skincare.db from products.py (accounts are left untouched)."""
+
 import sqlite3
+from contextlib import closing
+from pathlib import Path
 
-# Connect to (or create) the database file
-conn = sqlite3.connect('skincare.db')
-cursor = conn.cursor()
+from products import PRODUCTS_TABLE_SQL, insert_catalogue
 
-# Create the products table
-cursor.execute('''
-CREATE TABLE IF NOT EXISTS products (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    category TEXT NOT NULL,
-    skin_types TEXT NOT NULL,
-    ingredients TEXT NOT NULL
-)
-''')
+DATABASE_PATH = Path(__file__).resolve().parent / 'skincare.db'
 
-# Clear existing data (so re-running this script doesn't duplicate rows)
-cursor.execute('DELETE FROM products')
-
-# Import your existing product list
-from products import products
-
-for product in products:
-    cursor.execute('''
-        INSERT INTO products (name, category, skin_types, ingredients)
-        VALUES (?, ?, ?, ?)
-    ''', (
-        product['name'],
-        product['category'],
-        ','.join(product['skin_types']),
-        ','.join(product['ingredients'])
-    ))
-
-conn.commit()
-conn.close()
+# Replace existing catalogue rows so re-running this script does not duplicate them.
+with closing(sqlite3.connect(DATABASE_PATH)) as connection, connection:
+    connection.execute(PRODUCTS_TABLE_SQL)
+    connection.execute('DELETE FROM products')
+    insert_catalogue(connection)
 
 print("Database created and populated successfully.")

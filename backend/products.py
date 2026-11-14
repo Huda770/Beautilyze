@@ -1,3 +1,4 @@
+# Seed catalogue of products with their category, suitable skin tags and selected ingredients.
 products = [
     {
         "name": "CeraVe Foaming Facial Cleanser",
@@ -334,3 +335,22 @@ products = [
         "ingredients": ["Azelaic Acid"]
     },
 ]
+
+
+# Creating and filling the SQLite products table from the seed catalogue.
+PRODUCTS_TABLE_SQL = '''
+    CREATE TABLE IF NOT EXISTS products (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        category TEXT NOT NULL,
+        skin_types TEXT NOT NULL,
+        ingredients TEXT NOT NULL
+    )
+'''
+
+
+def insert_catalogue(connection):
+    connection.executemany(
+        'INSERT INTO products (name, category, skin_types, ingredients) VALUES (?, ?, ?, ?)',
+        [(p['name'], p['category'], ','.join(p['skin_types']), ','.join(p['ingredients'])) for p in products],
+    )

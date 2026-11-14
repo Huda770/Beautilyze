@@ -3,9 +3,8 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { Body, Button, Card, Label, PageTitle, fonts, palette, Screen, styles } from '@/components/beautilyze-ui';
 import { useAppState } from '@/state/app-state';
-import { SKIN_GOALS } from '@/constants/profile-options';
+import { AGE_GROUPS, SKIN_GOALS } from '@/constants/profile-options';
 
-const ageGroups = ['14-18', '19-25', '26-35', '36-45', '45+'];
 const inputStyle = { minHeight: 50, paddingHorizontal: 14, borderRadius: 16, borderWidth: 1, borderColor: palette.line, backgroundColor: palette.white, color: palette.ink, fontSize: 15, fontFamily: fonts.regular } as const;
 
 export default function ProfileScreen() {
@@ -68,7 +67,7 @@ export default function ProfileScreen() {
       </Text>
     </Card>}
 
-    <Card><Label>My skincare preferences</Label><Body>Age range</Body><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 9 }}>{ageGroups.map((age) => <Pressable key={age} onPress={() => setAgeGroup(age)} accessibilityRole="button" accessibilityState={{ selected: age === ageGroup }} style={[styles.chip, age === ageGroup && styles.chipSelected]}><Text style={[styles.chipText, age === ageGroup && styles.chipTextSelected]}>{age}</Text></Pressable>)}</View>
+    <Card><Label>My skincare preferences</Label><Body>Age range</Body><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 9 }}>{AGE_GROUPS.map((age) => <Pressable key={age} onPress={() => setAgeGroup(age)} accessibilityRole="button" accessibilityState={{ selected: age === ageGroup }} style={[styles.chip, age === ageGroup && styles.chipSelected]}><Text style={[styles.chipText, age === ageGroup && styles.chipTextSelected]}>{age}</Text></Pressable>)}</View>
 
     <View style={{ gap: 8, borderTopWidth: 1, borderColor: palette.line, paddingTop: 12 }}><Label>Skin goals</Label><Body>Choose the goals you want product suggestions to focus on.</Body><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 9 }}>{SKIN_GOALS.map((goal) => { const selected = concerns.includes(goal); return <Pressable key={goal} onPress={() => setConcerns(selected ? concerns.filter((item) => item !== goal) : [...concerns, goal])} accessibilityRole="button" accessibilityState={{ selected }} style={[styles.chip, selected && styles.chipSelected]}><Text style={[styles.chipText, selected && styles.chipTextSelected]}>{goal}</Text></Pressable>; })}</View></View>
 

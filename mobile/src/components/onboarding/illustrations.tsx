@@ -1,7 +1,5 @@
-import { StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { View, ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
-
-import { fonts } from '@/components/beautilyze-ui';
 
 // Brand tones taken from the selected logo and concept: cream, blush, mauve, and soft lavender.
 export const brand = {
@@ -76,6 +74,3 @@ export function ScanScene({ width, reduceMotion }: { width: number; reduceMotion
     <View style={[place(u, { x: 0.822, y: 0.515, w: 0.041, h: 0.055 }), { backgroundColor: brand.mauve, borderTopLeftRadius: 0.02 * u, borderTopRightRadius: 0.02 * u }]} />
   </View>;
 }
-
-const styles = StyleSheet.create({
-});

@@ -7,7 +7,7 @@ Beautilyze keeps its mobile app and Python API in one repository:
 
 ## Run the backend
 
-From `backend/`, start the API with `python app.py`. It listens on port `5000` and exposes `/health`, `/predict`, and `/profile/<user_id>`. The backend uses local OpenCV face checks and the bundled PyTorch model; it does not require an external AI API key.
+From `backend/`, start the API with `python app.py`. It listens on port `5000` and exposes `/health`, `/predict`, and the account routes `/auth/register`, `/auth/login`, `/auth/me` (GET/PUT), and `/auth/logout`. Uploads larger than 20 MB are rejected. The backend uses local OpenCV face checks and the bundled PyTorch model; it does not require an external AI API key.
 
 Required backend assets include `skin_type_model.pth`, `class_names.json`, `RecLogic.csv`, and `skincare.db`.
 
@@ -15,10 +15,9 @@ Required backend assets include `skin_type_model.pth`, `class_names.json`, `RecL
 
 From `mobile/`, run `npm install` and `npm start`. The app uses the Expo development host to reach the backend by default. If needed, copy `.env.example` to `.env` and set `EXPO_PUBLIC_API_URL` to the development computer's reachable address. Keep the phone and computer on the same Wi-Fi network.
 
-The app has Home, Analyze, Routine, and Profile tabs. Create an account or sign in from Profile. The Flask API stores accounts and age preferences in `backend/skincare.db`; passwords are saved as Werkzeug password hashes, and bearer-session tokens are stored as SHA-256 hashes with a 30-day expiry. Sign-out revokes the current session. On iOS and Android, the app stores the session token with Expo SecureStore. On web, sign-in lasts until the page is refreshed. Analysis results remain in app memory for the current session and are not saved to an account. The skin model is an image classifier, not a generative AI/chat model.
+The app has Home, Analyze, Routine, and Profile tabs. Create an account or sign in from Profile. The Flask API stores accounts and age preferences in `backend/skincare.db`; passwords are saved as Werkzeug password hashes, and bearer-session tokens are stored as SHA-256 hashes with a 30-day expiry. Sign-out revokes the current session. On iOS and Android, the app stores the session token with Expo SecureStore. On web, sign-in lasts until the page is refreshed. Analysis results, skin goals, allergy exclusions, and routines remain in app memory for the current session and are not saved to an account. The skin model is an image classifier, not a generative AI/chat model.
 
 For a public deployment, serve the API over HTTPS and restrict CORS to the app's expected origins. The local Expo development setup uses HTTP on a trusted Wi-Fi network and is intended for development, not production. Password reset and email verification are not implemented.
-The app has Home, Analyze, Routine, and Profile tabs. Create an account or sign in from Profile. The Flask API stores accounts and age preferences in `backend/skincare.db`; passwords are saved as Werkzeug password hashes, and bearer-session tokens are stored as SHA-256 hashes with a 30-day expiry. Sign-out revokes the current session. On iOS and Android, the app stores the session token with Expo SecureStore. Analysis results and allergy exclusions remain in app memory for the current session. The skin model is an image classifier, not a generative AI/chat model.
 
 ## Allergies and sensitivities
 
@@ -40,6 +39,10 @@ Training expects separate `Dataset/train` and `Dataset/valid` folders, each with
 
 The repository does not currently include the image dataset. The configured checkpoint has three outputs, but its training labels and held-out accuracy are not independently documented here.
 
+## Backend tests
+
+From `backend/`, run `python -m unittest`. Tests for a saved-profile API (`/profile/<user_id>`) are skipped because `app.py` does not expose those routes; `profile_store.py` still contains that storage code.
+
 ## Recommendations and user guidance
 
-Skin goals are selected by the user and guide product recommendations; they are not detected from the photo. Recommendations use `RecLogic.csv` and the SQLite product catalogue, including skin suitability, ingredient matching, selected categories, and allergy/sensitivity exclusions. Photo-based skin type estimates are informational and are not medical diagnoses.
+Skin goals are selected by the user and guide product recommendations; they are not detected from the photo. Recommendations use `RecLogic.csv` and the SQLite product catalogue (`python setup_db.py` rebuilds it from `products.py`), including skin suitability, ingredient matching, selected categories, and allergy/sensitivity exclusions. Photo-based skin type estimates are informational and are not medical diagnoses.
