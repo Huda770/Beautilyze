@@ -13,11 +13,13 @@ Required backend assets include `skin_type_model.pth`, `class_names.json`, `RecL
 
 ## Run the mobile app
 
-From `mobile/`, run `npm install` and `npm start`. The app uses the Expo development host to reach the backend by default. If needed, copy `.env.example` to `.env` and set `EXPO_PUBLIC_API_URL` to the development computer's reachable address. Keep the phone and computer on the same Wi-Fi network.
+From `mobile/`, run `npm install` and `npm start`. Check changes with `npm run lint` and `npx tsc --noEmit`. The app uses the Expo development host to reach the backend by default. If needed, copy `.env.example` to `.env` and set `EXPO_PUBLIC_API_URL` to the development computer's reachable address. Keep the phone and computer on the same Wi-Fi network.
 
 The app has Home, Analyze, Routine, and Profile tabs. Create an account or sign in from Profile. The Flask API stores accounts and age preferences in `backend/skincare.db`; passwords are saved as Werkzeug password hashes, and bearer-session tokens are stored as SHA-256 hashes with a 30-day expiry. Sign-out revokes the current session. On iOS and Android, the app stores the session token with Expo SecureStore. On web, sign-in lasts until the page is refreshed. Analysis results, skin goals, allergy exclusions, and routines remain in app memory for the current session and are not saved to an account. The skin model is an image classifier, not a generative AI/chat model.
 
-For a public deployment, serve the API over HTTPS and restrict CORS to the app's expected origins. The local Expo development setup uses HTTP on a trusted Wi-Fi network and is intended for development, not production. Password reset and email verification are not implemented.
+After 10 failed sign-ins within 15 minutes from one address or for one email, `/auth/login` answers 429 until the window passes. These counts are kept in memory per server process. Behind a reverse proxy, every client shares the proxy's address unless the proxy forwards the client address.
+
+For a public deployment, serve the API over HTTPS and set `CORS_ORIGINS` to a comma-separated list of the web origins allowed to call it (for example `https://app.example.com`). When it is unset, any origin is allowed, which is meant for local development only. The local Expo development setup uses HTTP on a trusted Wi-Fi network and is intended for development, not production. Password reset and email verification are not implemented.
 
 ## Allergies and sensitivities
 
@@ -38,10 +40,6 @@ python verify_model.py
 Training expects separate `Dataset/train` and `Dataset/valid` folders, each with the same three class folders: `combination`, `dry`, and `oily`. Run `python train.py` from `backend/`; it saves a candidate as `skin_type_model_3class.pth` and does not overwrite the configured checkpoint. Keep any `Dataset/test` images separate from training and model selection. Run `python evaluate.py` only after pointing `CHECKPOINT_NAME` in `model_config.py` to the candidate you intend to evaluate.
 
 The repository does not currently include the image dataset. The configured checkpoint has three outputs, but its training labels and held-out accuracy are not independently documented here.
-
-## Backend tests
-
-From `backend/`, run `python -m unittest`. Tests for a saved-profile API (`/profile/<user_id>`) are skipped because `app.py` does not expose those routes; `profile_store.py` still contains that storage code.
 
 ## Recommendations and user guidance
 

@@ -16,13 +16,14 @@ from accounts import create_auth_blueprint, initialize_accounts_database
 from explanations import CONCERN_EXPLANATIONS, explanations_for
 from model_config import CHECKPOINT_NAME, CLASS_NAMES, build_model, inference_transform
 from products import PRODUCTS_TABLE_SQL, insert_catalogue
-from profile_store import validate_age_group, validate_categories
-from recommend import build_routine
+from recommend import AGE_GROUP_TO_DATASET, build_routine
 
 
 # Flask app, paths and request limits.
 app = Flask(__name__)
-CORS(app)
+# Browsers may call the API only from CORS_ORIGINS (comma-separated); unset allows any origin for local development.
+allowed_origins = [origin.strip() for origin in os.environ.get('CORS_ORIGINS', '').split(',') if origin.strip()]
+CORS(app, origins=allowed_origins or '*')
 # Reject oversized uploads before they are read into memory (Flask answers 413).
 app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024
 
@@ -174,16 +175,34 @@ def parse_avoid_list():
     return combined
 
 
+def validate_categories(categories, supported_categories):
+    if categories is None:
+        return []
+    if not isinstance(categories, list):
+        raise OptionsError('Preferred product categories must be a list.')
+    if len(categories) > len(supported_categories):
+        raise OptionsError('Too many product categories were selected.')
+    if any(not isinstance(category, str) for category in categories):
+        raise OptionsError('Each product category must be text.')
+    if any(category not in supported_categories for category in categories):
+        raise OptionsError('One or more product categories are not available.')
+    return list(dict.fromkeys(categories))
+
+
+def validate_age_group(age_group):
+    # Every label the recommender can map (current, earlier and dataset labels) is accepted.
+    if age_group not in AGE_GROUP_TO_DATASET:
+        raise OptionsError('Choose one of the available age groups.')
+    return age_group
+
+
 def parse_predict_options():
     # Parse in the original order so the first reported error is unchanged.
     categories = json_form_field('categories', 'Invalid analysis options.')
     concerns = parse_concerns()
     avoid = parse_avoid_list()
-    try:
-        categories = validate_categories(categories, get_product_categories())
-        age_group = validate_age_group(request.form.get('age_group', DEFAULT_AGE_GROUP))
-    except ValueError as exc:
-        raise OptionsError(str(exc)) from None
+    categories = validate_categories(categories, get_product_categories())
+    age_group = validate_age_group(request.form.get('age_group', DEFAULT_AGE_GROUP))
     return {'categories': categories, 'concerns': concerns, 'avoid': avoid, 'age_group': age_group}
 
 

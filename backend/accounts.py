@@ -7,6 +7,7 @@ import hashlib
 import re
 import secrets
 import sqlite3
+import threading
 
 from flask import Blueprint, g, jsonify, request
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -15,6 +16,8 @@ from werkzeug.security import check_password_hash, generate_password_hash
 # Account settings and the shared SQLite connection/schema helpers.
 AGE_GROUPS = {"14-18", "19-25", "26-35", "36-45", "45+"}
 SESSION_DAYS = 30
+LOGIN_FAILURE_LIMIT = 10
+LOGIN_FAILURE_WINDOW = timedelta(minutes=15)
 EMAIL_PATTERN = re.compile(r"[^\s@]+@[^\s@]+\.[^\s@]+")
 # Compared against when an email is unknown so login timing does not reveal which emails exist.
 DUMMY_PASSWORD_HASH = generate_password_hash(secrets.token_urlsafe(16))
@@ -84,14 +87,55 @@ def fetch_public_user(connection, user_id):
     return connection.execute("SELECT id, email, age_group FROM users WHERE id = ?", (user_id,)).fetchone()
 
 
+# Brute-force protection: recent failed sign-ins counted per client address and per email.
+class LoginThrottle:
+    """In-memory and per process, so limits reset when the server restarts."""
+
+    MAX_TRACKED_KEYS = 10_000
+
+    def __init__(self, limit=LOGIN_FAILURE_LIMIT, window=LOGIN_FAILURE_WINDOW):
+        self.limit, self.window = limit, window
+        self.failures = {}
+        self.lock = threading.Lock()
+
+    def _prune(self, now):
+        self.failures = {
+            key: recent for key, times in self.failures.items()
+            if (recent := [t for t in times if now - t < self.window])
+        }
+
+    def blocked(self, keys):
+        now = utc_now()
+        with self.lock:
+            return any(
+                sum(now - t < self.window for t in self.failures.get(key, ())) >= self.limit
+                for key in keys
+            )
+
+    def record_failure(self, keys):
+        now = utc_now()
+        with self.lock:
+            if len(self.failures) >= self.MAX_TRACKED_KEYS:
+                self._prune(now)
+            for key in keys:
+                self.failures.setdefault(key, []).append(now)
+
+    def reset(self, key):
+        with self.lock:
+            self.failures.pop(key, None)
+
+
 # The /auth blueprint: session issuing, the auth guard and its routes.
 def create_auth_blueprint(database):
     auth = Blueprint("auth", __name__)
+    throttle = LoginThrottle()
 
     def issue_session(user_id):
         token = secrets.token_urlsafe(32)
         now = utc_now()
         with connect(database) as connection:
+            # Expired sessions are otherwise removed only when someone presents them.
+            connection.execute("DELETE FROM auth_sessions WHERE expires_at <= ?", (now.isoformat(),))
             connection.execute(
                 "INSERT INTO auth_sessions(token_hash, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)",
                 (token_digest(token), user_id, (now + timedelta(days=SESSION_DAYS)).isoformat(), now.isoformat()),
@@ -147,6 +191,10 @@ def create_auth_blueprint(database):
         email, password = credentials_from(json_object())
         if email is None:
             return jsonify({"error": "Enter your email and password."}), 400
+        email_key = ("email", email.lower())
+        throttle_keys = (("address", request.remote_addr), email_key)
+        if throttle.blocked(throttle_keys):
+            return jsonify({"error": "Too many sign-in attempts. Please wait 15 minutes and try again."}), 429
         with connect(database) as connection:
             user = connection.execute(
                 "SELECT id, email, age_group, password_hash FROM users WHERE email = ? COLLATE NOCASE",
@@ -154,7 +202,10 @@ def create_auth_blueprint(database):
             ).fetchone()
         password_ok = check_password_hash(user["password_hash"] if user else DUMMY_PASSWORD_HASH, password)
         if not user or not password_ok:
+            throttle.record_failure(throttle_keys)
             return jsonify({"error": "Email or password is incorrect."}), 401
+        # Only the email's counter is cleared, so one valid account cannot unlock a guessing address.
+        throttle.reset(email_key)
         return jsonify({"user": public_user(user), "token": issue_session(user["id"])}), 200
 
     @auth.get("/auth/me")

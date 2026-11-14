@@ -1,4 +1,4 @@
-import { createContext, PropsWithChildren, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, PropsWithChildren, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { API_URL, readJsonResponse } from '@/constants/api';
@@ -143,7 +143,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     setRoutineAssignments(emptyRoutines());
   }
 
-  async function setAgeGroup(value: string) {
+  const setAgeGroup = useCallback(async (value: string) => {
     setAgeGroupState(value);
     if (token && account) {
       try {
@@ -153,9 +153,9 @@ export function AppStateProvider({ children }: PropsWithChildren) {
         setAuthError(error instanceof Error ? error.message : 'Your age preference could not be saved.');
       }
     }
-  }
+  }, [token, account]);
 
-  async function signOut() {
+  const signOut = useCallback(async () => {
     const activeToken = token;
     setAuthError('');
     if (activeToken) {
@@ -170,14 +170,14 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       setAllergies([]);
       setRoutineAssignments(emptyRoutines());
     }
-  }
+  }, [token]);
 
-  function addToRoutine(routine: RoutineKey, product: ProductRecommendation, explanation?: string) {
+  const addToRoutine = useCallback((routine: RoutineKey, product: ProductRecommendation, explanation?: string) => {
     if (routineAssignments[routine].some((item) => isSameProduct(item, product))) return false;
     setRoutineAssignments((current) => current[routine].some((item) => isSameProduct(item, product)) ? current
       : { ...current, [routine]: [...current[routine], { ...product, explanation, addedAt: new Date().toISOString() }] });
     return true;
-  }
+  }, [routineAssignments]);
 
   function removeFromRoutine(routine: RoutineKey, product: ProductRecommendation) {
     setRoutineAssignments((current) => ({ ...current, [routine]: current[routine].filter((item) => !isSameProduct(item, product)) }));
@@ -186,7 +186,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
   const value = useMemo(() => ({
     analysis, latestAnalysis: storedAnalysis, setAnalysis, ageGroup, setAgeGroup, account, authReady, authError,
     clearAuthError: () => setAuthError(''), signIn, signOut, allergies, setAllergies, concerns, setConcerns, routineAssignments, addToRoutine, removeFromRoutine,
-  }), [analysis, storedAnalysis, ageGroup, account, authReady, authError, token, allergies, concerns, routineAssignments]);
+  }), [analysis, storedAnalysis, ageGroup, setAgeGroup, account, authReady, authError, signOut, allergies, concerns, routineAssignments, addToRoutine]);
 
   return <AppState.Provider value={value}>{children}</AppState.Provider>;
 }

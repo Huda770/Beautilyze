@@ -40,6 +40,7 @@ and recommendation data live separately in the sibling `../backend/` folder.
 - `app.json` sets the app name, icons, splash screen, and Expo plugins.
 - `package.json` lists the app's commands and JavaScript packages.
 - `tsconfig.json` sets TypeScript rules and import shortcuts.
+- `eslint.config.js` applies Expo's lint rules for `npm run lint`.
 - `assets/` contains images and icons used by the app.
 - `scripts/reset-project.js` is the optional Expo starter reset script.
 

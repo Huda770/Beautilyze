@@ -1,17 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import { useColorScheme as useRNColorScheme } from 'react-native';
 
-/**
- * To support static rendering, this value needs to be re-calculated on the client side for web
- */
-// Wait for web hydration before applying the browser's color preference.
+const subscribeNever = () => () => {};
+
+// Static rendering has no browser preference, so render 'light' until the client has hydrated.
 export function useColorScheme() {
-  const [hasHydrated, setHasHydrated] = useState(false);
-
-  useEffect(() => {
-    setHasHydrated(true);
-  }, []);
-
+  const hasHydrated = useSyncExternalStore(subscribeNever, () => true, () => false);
   const colorScheme = useRNColorScheme();
 
   if (hasHydrated) {

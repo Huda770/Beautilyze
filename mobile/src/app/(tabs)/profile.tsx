@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { Body, Button, Card, Label, PageTitle, fonts, palette, Screen, styles } from '@/components/beautilyze-ui';
 import { useAppState } from '@/state/app-state';
@@ -19,9 +19,11 @@ export default function ProfileScreen() {
   const [signingOut, setSigningOut] = useState(false);
 
   // The welcome screen opens Profile with mode=register or mode=signin to show the matching form.
-  useEffect(() => {
+  const [appliedMode, setAppliedMode] = useState(mode);
+  if (mode !== appliedMode) {
+    setAppliedMode(mode);
     if (mode === 'register' || mode === 'signin') setRegisterMode(mode === 'register');
-  }, [mode]);
+  }
 
   function addAllergy() {
     const value = allergyInput.trim();
