@@ -3,49 +3,44 @@ import torch.nn as nn
 from torchvision import datasets, models, transforms
 from torch.utils.data import DataLoader, random_split
 from sklearn.metrics import confusion_matrix, classification_report
-import json
+from model_config import CLASS_NAMES, IMAGE_SIZE, NORMALIZE_MEAN, NORMALIZE_STD, CHECKPOINT_NAME
 
-with open('class_names.json', 'r') as f:
-    class_names = json.load(f)
+class_names = list(CLASS_NAMES)
 
 valid_transform = transforms.Compose([
-    transforms.Resize((224, 224)),
+    transforms.Resize((IMAGE_SIZE, IMAGE_SIZE)),
     transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    transforms.Normalize(mean=NORMALIZE_MEAN, std=NORMALIZE_STD)
 ])
 
-full_data = datasets.ImageFolder('02_01+shutterphoto', transform=valid_transform)
-
-torch.manual_seed(42)
-train_size = int(0.8 * len(full_data))
-valid_size = len(full_data) - train_size
-train_data, valid_data = random_split(full_data, [train_size, valid_size])
-
-valid_loader = DataLoader(valid_data, batch_size=32, shuffle=False)
+test_data = datasets.ImageFolder('Dataset/test', transform=valid_transform)
+assert tuple(test_data.classes) == CLASS_NAMES, \
+    f"Expected test folders in this exact order: {CLASS_NAMES}; found {test_data.classes}"
+test_loader = DataLoader(test_data, batch_size=32, shuffle=False)
 
 model = models.resnet18(weights=None)
 model.fc = nn.Sequential(
     nn.Dropout(0.5),
     nn.Linear(model.fc.in_features, len(class_names))
 )
-model.load_state_dict(torch.load('skin_type_model.pth', map_location='cpu'))
+model.load_state_dict(torch.load(CHECKPOINT_NAME, map_location='cpu'))
 model.eval()
 
 all_preds = []
 all_labels = []
 
 with torch.no_grad():
-    for images, labels in valid_loader:
+    for images, labels in test_loader:
         outputs = model(images)
         _, predicted = torch.max(outputs, 1)
         all_preds.extend(predicted.numpy())
         all_labels.extend(labels.numpy())
 
-cm = confusion_matrix(all_labels, all_preds)
+cm = confusion_matrix(all_labels, all_preds, labels=list(range(len(class_names))))
 print("Confusion Matrix:")
 print("Rows = actual class, Columns = predicted class")
 print("Classes order:", class_names)
 print(cm)
 
 print("\nPer-Class Metrics:")
-print(classification_report(all_labels, all_preds, target_names=class_names))
+print(classification_report(all_labels, all_preds, labels=list(range(len(class_names))), target_names=class_names, zero_division=0))

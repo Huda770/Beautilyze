@@ -1,0 +1,20 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "production": {
+      "autoIncrement": true,
+      "ios": {
+        "resourceClass": "default"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://REPLACE-WITH-YOUR-BACKEND"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

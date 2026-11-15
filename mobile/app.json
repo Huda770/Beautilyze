@@ -1,0 +1,56 @@
+{
+  "expo": {
+    "name": "Beautilyze",
+    "slug": "Beautilyze",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "beautilyze",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "icon": "./assets/images/ios-icon.png",
+      "supportsTablet": false,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.huda770.beautilyze"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FDF8F6",
+          "image": "./assets/images/beautilyze-logo.png",
+          "imageWidth": 160
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Beautilyze uses a photo you choose of your face to estimate your skin type and suggest products.",
+          "cameraPermission": "Beautilyze uses the camera to take a photo of your face to estimate your skin type and suggest products.",
+          "microphonePermission": false
+        }
+      ],
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}
