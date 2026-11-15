@@ -1,6 +1,6 @@
 import { Link } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { Image, ScrollView, Text, View } from 'react-native';
 import { Body, Button, Card, Label, PageTitle, fonts, palette, Screen, styles } from '@/components/beautilyze-ui';
 import { explainProduct, iconFor, titleCase } from '@/constants/products';
 import { ROUTINES } from '@/constants/routines';
@@ -19,12 +19,17 @@ export default function ReportScreen() {
   const concernNotes = Object.entries(analysis.explanations?.selected_concerns || {});
   return <Screen><ScrollView contentContainerStyle={styles.scroll}>
     <PageTitle eyebrow={`Your results · ${new Date(analysis.createdAt).toLocaleDateString()}`} title="Your skin report" subtitle="A photo based estimate with product suggestions picked for your preferences." />
-    <Card style={{ backgroundColor: palette.soft }}>
-      <Label>{titleCase(analysis.skin_type)} skin</Label>
-      {typeof analysis.confidence === 'number' ? <Body>Confidence: {Math.round(analysis.confidence * (analysis.confidence <= 1 ? 100 : 1))}%{analysis.result_reliable === false ? ' · low confidence, consider retaking the photo' : ''}</Body> : null}
-      <Body>{analysis.explanations?.skin_type || 'An estimate from your photo, not a medical assessment.'}</Body>
-      {analysis.note ? <Body>{analysis.note}</Body> : null}
-      <Body>Goals: {analysis.concerns.join(', ') || 'none selected'}</Body>
+    <Card style={{ backgroundColor: '#E8CED1', minHeight: 190, padding: 18 }}>
+      <View style={[styles.row, { alignItems: 'stretch', gap: 12 }]}>
+        <View style={{ flex: 1, justifyContent: 'center', gap: 8 }}>
+          <Label style={{ fontSize: 24 }}>{titleCase(analysis.skin_type)} skin</Label>
+          <Body style={{ color: palette.ink }}>{analysis.explanations?.skin_type || 'An estimate from your photo, not a medical assessment.'}</Body>
+          {analysis.note ? <Body style={{ color: palette.ink }}>{analysis.note}</Body> : null}
+        </View>
+        <Image source={skinTypeImage(analysis.skin_type)} style={{ width: 95, height: 113, borderRadius: 18, backgroundColor: palette.cream }} resizeMode="cover" />
+      </View>
+    </Card>
+    <Card><Label>Skin goals</Label>{!concernNotes.length ? <Body>{analysis.concerns.join(', ') || 'None selected'}</Body> : null}
       {concernNotes.map(([concern, note]) => <Body key={concern}><Text style={{ fontFamily: fonts.bold }}>{titleCase(concern)}: </Text>{note}</Body>)}
     </Card>
     <Label>Recommended products</Label>
@@ -34,10 +39,9 @@ export default function ReportScreen() {
       const item = { ...product, category: product.category || category };
       const inRoutines = ROUTINES.filter((r) => routineAssignments[r.key].some((p) => isSameProduct(p, item)));
       return <Card key={category}>
-        <View style={[styles.row, { justifyContent: 'flex-start', gap: 10 }]}><Text style={{ fontSize: 28 }}>{iconFor(category)}</Text><Text style={{ color: palette.accent, fontFamily: fonts.bold }}>{titleCase(category)}</Text></View>
+        <View style={[styles.row, { justifyContent: 'flex-start', gap: 10 }]}>{productTypeImage(category) ? <Image source={productTypeImage(category)!} style={{ width: 56, height: 56 }} resizeMode="contain" /> : <Text style={{ fontSize: 28 }}>{iconFor(category)}</Text>}<Text style={{ color: palette.accent, fontFamily: fonts.bold }}>{titleCase(category)}</Text></View>
         <Label>{product.name}</Label>
         <Body>{explanation}</Body>
-        <Body style={{ fontSize: 12 }}>Check the full ingredient list and patch test new products.</Body>
         {inRoutines.length ? <Body style={{ color: palette.plum }}>✓ In your {inRoutines.map((r) => r.key.toLowerCase()).join(', ')} routine</Body> : null}
         {notice[category] ? <Body style={{ color: palette.accentDark }}>{notice[category]}</Body> : null}
         {picking === category ? <View style={{ gap: 8 }}>
@@ -56,4 +60,20 @@ export default function ReportScreen() {
     })}
     {!products.length ? <Card><Body>{analysis.recommendation_note ? 'Try adjusting your goals or exclusions in Profile.' : 'No product matches found for your preferences.'}</Body></Card> : null}
   </ScrollView></Screen>;
+}
+
+function skinTypeImage(skinType: string) {
+  const type = skinType.toLowerCase();
+  if (type.includes('oily')) return require('../../assets/images/skin-oily.jpg');
+  if (type.includes('combination')) return require('../../assets/images/skin-combination.jpg');
+  if (type.includes('dry')) return require('../../assets/images/skin-dry.jpg');
+  return require('../../assets/images/skin-combination.jpg');
+}
+
+function productTypeImage(category: string) {
+  const value = category.toLowerCase();
+  if (value.includes('serum')) return require('../../assets/images/serum.jpg');
+  if (value.includes('toner')) return require('../../assets/images/toner.jpg');
+  if (value.includes('treatment')) return require('../../assets/images/treatment.jpg');
+  return null;
 }

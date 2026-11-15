@@ -77,10 +77,10 @@ export default function ProfileScreen() {
       <TextInput placeholder="e.g. Niacinamide" value={allergyInput} onChangeText={setAllergyInput} onSubmitEditing={addAllergy} style={inputStyle} />
       <Pressable accessibilityRole="button" onPress={addAllergy}><Text style={{ color: palette.accent, fontFamily: fonts.bold }}>+ Add ingredient</Text></Pressable>
       {allergies.map((item) => <View key={item} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 }}><Text style={{ color: palette.ink }}>{item}</Text><Pressable accessibilityRole="button" onPress={() => setAllergies(allergies.filter((value) => value !== item))}><Text style={{ color: palette.danger }}>Remove</Text></Pressable></View>)}
-      <Body style={{ fontSize: 12, marginTop: 8 }}>Ingredient exclusions are kept for this app session. Catalogue ingredient lists are incomplete; review the complete product label.</Body>
+      <Body style={{ fontSize: 12, marginTop: 8 }}>Ingredient exclusions are saved on this device. Catalogue ingredient lists are incomplete; review the complete product label.</Body>
     </View></Card>
 
-    <Card><Label>Latest analysis</Label>{analysis ? <><Text style={{ fontSize: 21, color: palette.ink, fontFamily: fonts.serif, textTransform: 'capitalize' }}>{analysis.skin_type.replaceAll('-', ' ')}</Text><Body>{new Date(analysis.createdAt).toLocaleString()}</Body><Body>The latest analysis stays in this app session.</Body></> : <Body>You haven’t completed an analysis in this session yet.</Body>}</Card>
+    <Card><Label>Latest analysis</Label>{analysis ? <><Text style={{ fontSize: 21, color: palette.ink, fontFamily: fonts.serif, textTransform: 'capitalize' }}>{analysis.skin_type.replaceAll('-', ' ')}</Text><Body>{new Date(analysis.createdAt).toLocaleString()}</Body><Body>Your latest analysis is saved on this device.</Body></> : <Body>You haven’t completed an analysis yet.</Body>}</Card>
     <Card><Label>About Beautilyze</Label><Body>Beautilyze offers skin type estimates and general product suggestions. Photo-based results are not medical diagnoses.</Body></Card>
   </ScrollView></Screen>;
 }

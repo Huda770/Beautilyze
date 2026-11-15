@@ -14,6 +14,7 @@ export default function AnalyzeScreen() {
   const [photo, setPhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [hasAnalyzedHere, setHasAnalyzedHere] = useState(false);
 
   async function choosePhoto(camera = false) {
     const permission = camera ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -46,6 +47,7 @@ export default function AnalyzeScreen() {
         routine: data.routine || {}, createdAt: new Date().toISOString(), ageGroup,
         concerns, allergies: [...allergies],
       });
+      setHasAnalyzedHere(true);
       setMessage('Your skin analysis is ready. Tap your report below to see your recommended products.');
     } catch (error) {
       setMessage(error instanceof Error && (error.message.includes('Network request failed') || error.message.includes('fetch'))
@@ -64,8 +66,7 @@ export default function AnalyzeScreen() {
     <Card><Label>Your saved preferences</Label><Body>Age range: {ageGroup}. Skin goals: {concerns.join(', ') || 'none selected'}. {allergies.length ? `Ingredient exclusions: ${allergies.join(', ')}.` : 'No ingredient exclusions added.'}</Body><Link href="/profile" asChild><Button title="Edit profile preferences" secondary /></Link></Card>
     {message ? <Card style={{ backgroundColor: message.startsWith('Your skin') ? palette.soft : '#F8E4DD', borderColor: 'transparent' }}><Body style={{ color: message.startsWith('Your skin') ? palette.accentDark : palette.danger }}>{message}</Body></Card> : null}
     <Button title={loading ? 'Analyzing your photo…' : 'Analyze my skin'} disabled={loading} onPress={submit} />
-    {analysis ? <Link href="/report" asChild><Pressable accessibilityRole="button" style={{ borderRadius: 20, backgroundColor: palette.white, borderWidth: 1, borderColor: palette.line, padding: 18, gap: 6 }}><Text style={{ color: palette.accent, fontSize: 11, fontWeight: '700', letterSpacing: 1.3 }}>YOUR SKIN REPORT</Text><Text style={{ color: palette.ink, fontSize: 24, fontFamily: 'DMSerifDisplay_400Regular', textTransform: 'capitalize' }}>{analysis.skin_type.replaceAll('-', ' ')} skin</Text><Text style={{ color: palette.muted }}>Tap to view your personalised products →</Text></Pressable></Link> : null}
+    {hasAnalyzedHere && analysis ? <Link href="/report" asChild><Pressable accessibilityRole="button" style={{ borderRadius: 20, backgroundColor: palette.white, borderWidth: 1, borderColor: palette.line, padding: 18, gap: 6 }}><Text style={{ color: palette.accent, fontSize: 11, fontWeight: '700', letterSpacing: 1.3 }}>YOUR SKIN REPORT</Text><Text style={{ color: palette.ink, fontSize: 24, fontFamily: 'DMSerifDisplay_400Regular', textTransform: 'capitalize' }}>{analysis.skin_type.replaceAll('-', ' ')} skin</Text><Text style={{ color: palette.muted }}>Tap to view your personalised products →</Text></Pressable></Link> : null}
     {loading ? <ActivityIndicator color={palette.accent} /> : null}
-    <Body style={{ textAlign: 'center', fontSize: 12 }}>Your photo is sent to your Beautilyze backend for analysis.</Body>
   </ScrollView></Screen>;
 }

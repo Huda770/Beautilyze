@@ -25,6 +25,5 @@ export function explainProduct(category: string, product: ProductRecommendation,
   parts.push(product.matched_ingredients?.length
     ? `It contains ${product.matched_ingredients.join(', ')}, matched to your ${skin} skin and goals${analysis.concerns.length ? ` (${analysis.concerns.join(', ')})` : ''}.`
     : `It was picked for ${skin} skin${analysis.concerns.length ? ` and your goals: ${analysis.concerns.join(', ')}` : ''}.`);
-  if (analysis.allergies.length) parts.push(`Filtered to avoid: ${analysis.allergies.join(', ')}.`);
   return parts.join(' ');
 }

@@ -1,5 +1,6 @@
 import { PropsWithChildren, ReactNode } from 'react';
 import { Pressable, PressableProps, StyleSheet, Text, TextProps, View, ViewProps } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Shared brand colors from the Beautilyze logo: cream, blush, mauve, and soft lavender.
 export const palette = {
@@ -14,7 +15,8 @@ export const fonts = {
 };
 
 export function Screen({ children, ...props }: PropsWithChildren<ViewProps>) {
-  return <View {...props} style={[styles.screen, props.style]}>{children}</View>;
+  const insets = useSafeAreaInsets();
+  return <View {...props} style={[styles.screen, { paddingTop: Math.max(insets.top, 38), paddingBottom: Math.max(insets.bottom, 38) }, props.style]}>{children}</View>;
 }
 
 export function PageTitle({ eyebrow, title, subtitle }: { eyebrow?: string; title: string; subtitle?: string }) {

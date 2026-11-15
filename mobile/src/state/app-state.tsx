@@ -1,11 +1,14 @@
 import { createContext, PropsWithChildren, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Platform } from 'react-native';
+import { File, Paths } from 'expo-file-system';
 import * as SecureStore from 'expo-secure-store';
 import { API_URL, readJsonResponse } from '@/constants/api';
 import { DEFAULT_AGE_GROUP } from '@/constants/profile-options';
 import type { RoutineKey } from '@/constants/routines';
 
 const SESSION_KEY = 'beautilyze.auth-token';
+const PREFERENCES_KEY = 'beautilyze.preferences.v1';
+const PREFERENCES_FILE = 'beautilyze-preferences-v1.json';
 
 // Analysis, routine and account types shared by the screens.
 export type ProductRecommendation = {
@@ -37,6 +40,7 @@ const productId = (product: Pick<ProductRecommendation, 'name' | 'category'>) =>
 export const isSameProduct = (a: Pick<ProductRecommendation, 'name' | 'category'>, b: Pick<ProductRecommendation, 'name' | 'category'>) => productId(a) === productId(b);
 
 export type Account = { id: number; email: string; age_group: string };
+type SavedPreferences = { ageGroup: string; allergies: string[]; concerns: string[]; analysis: Analysis | null; routineAssignments: RoutineAssignments };
 type AuthResult = { user: Account; token: string };
 
 type AppStateValue = {
@@ -66,6 +70,21 @@ const AppState = createContext<AppStateValue | null>(null);
 
 // Session-token storage (SecureStore on native; web keeps no token) and authenticated API calls.
 const normalizeList = (items: string[]) => JSON.stringify(items.map((item) => item.trim().toLowerCase()).sort());
+
+async function readPreferences(): Promise<SavedPreferences | null> {
+  try {
+    const raw = Platform.OS === 'web' ? globalThis.localStorage?.getItem(PREFERENCES_KEY) : await new File(Paths.document, PREFERENCES_FILE).text();
+    if (!raw) return null;
+    const saved = JSON.parse(raw) as Partial<SavedPreferences>;
+    return { ageGroup: typeof saved.ageGroup === 'string' ? saved.ageGroup : DEFAULT_AGE_GROUP, allergies: Array.isArray(saved.allergies) ? saved.allergies : [], concerns: Array.isArray(saved.concerns) ? saved.concerns : [], analysis: saved.analysis ?? null, routineAssignments: { ...emptyRoutines(), ...(saved.routineAssignments || {}) } };
+  } catch { return null; }
+}
+
+async function writePreferences(saved: SavedPreferences) {
+  const raw = JSON.stringify(saved);
+  if (Platform.OS === 'web') globalThis.localStorage?.setItem(PREFERENCES_KEY, raw);
+  else { const file = new File(Paths.document, PREFERENCES_FILE); file.create({ intermediates: true, overwrite: true }); file.write(raw); }
+}
 
 async function readToken() {
   return Platform.OS === 'web' ? null : SecureStore.getItemAsync(SESSION_KEY);
@@ -98,6 +117,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
   const [allergies, setAllergies] = useState<string[]>([]);
   const [concerns, setConcerns] = useState<string[]>([]);
   const [routineAssignments, setRoutineAssignments] = useState<RoutineAssignments>(emptyRoutines);
+  const [preferencesReady, setPreferencesReady] = useState(false);
   const analysis = storedAnalysis && normalizeList(storedAnalysis.allergies || []) === normalizeList(allergies)
     ? storedAnalysis : null;
 
@@ -126,6 +146,20 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     })();
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    readPreferences().then((saved) => {
+      if (!active) return;
+      if (saved) { setAgeGroupState(saved.ageGroup); setAllergies(saved.allergies); setConcerns(saved.concerns); setAnalysis(saved.analysis); setRoutineAssignments(saved.routineAssignments); }
+      setPreferencesReady(true);
+    });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (preferencesReady) void writePreferences({ ageGroup, allergies, concerns, analysis: storedAnalysis, routineAssignments }).catch(() => {});
+  }, [preferencesReady, ageGroup, allergies, concerns, storedAnalysis, routineAssignments]);
 
   async function signIn(email: string, password: string, register = false) {
     setAuthError('');
