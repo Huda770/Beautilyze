@@ -152,11 +152,10 @@ def predict():
     with torch.no_grad():
         output = model(tensor)
         probabilities = torch.softmax(output, dim=1)
-        confidence, predicted_idx = torch.max(probabilities, 1)
+        _, predicted_idx = torch.max(probabilities, 1)
 
     predicted_skin_type = class_names[predicted_idx.item()]
 
-    low_confidence = confidence.item() < 0.5
 
     try:
         concerns = json_lib.loads(request.form.get('concerns', '[]'))
@@ -178,13 +177,8 @@ def predict():
     response = {
         "routine": routine,
         "skin_type": predicted_skin_type,
-        "confidence": confidence.item(),
-        "result_reliable": not low_confidence,
         "explanations": explanations_for(predicted_skin_type, concerns),
     }
-    if low_confidence:
-        response["note"] = "Analysis confidence was low — for best results, use a clear, well-lit front-facing photo."
-
     return jsonify(response)
 
 if __name__ == '__main__':

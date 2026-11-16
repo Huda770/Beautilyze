@@ -41,7 +41,7 @@ export default function AnalyzeScreen() {
       const response = await expoFetch(`${API_URL}/predict`, { method: 'POST', body: form });
       const data = await readJsonResponse(response, 'We could not analyze this photo. Try another clear face photo.');
       setAnalysis({
-        skin_type: data.skin_type, confidence: data.confidence, result_reliable: data.result_reliable,
+        skin_type: data.skin_type,
         note: data.note, recommendation_note: data.recommendation_note, explanations: data.explanations,
         preferredCategories: data.preferred_categories || [],
         routine: data.routine || {}, createdAt: new Date().toISOString(), ageGroup,

@@ -20,8 +20,6 @@ export type ProductRecommendation = {
 
 export type Analysis = {
   skin_type: string;
-  confidence?: number;
-  result_reliable?: boolean;
   note?: string;
   recommendation_note?: string;
   explanations?: { skin_type?: string; selected_concerns?: Record<string, string> };
@@ -87,15 +85,17 @@ async function writePreferences(saved: SavedPreferences) {
 }
 
 async function readToken() {
-  return Platform.OS === 'web' ? null : SecureStore.getItemAsync(SESSION_KEY);
+  return Platform.OS === 'web' ? globalThis.localStorage?.getItem(SESSION_KEY) ?? null : SecureStore.getItemAsync(SESSION_KEY);
 }
 
 async function saveToken(token: string) {
-  if (Platform.OS !== 'web') await SecureStore.setItemAsync(SESSION_KEY, token);
+  if (Platform.OS === 'web') globalThis.localStorage?.setItem(SESSION_KEY, token);
+  else await SecureStore.setItemAsync(SESSION_KEY, token);
 }
 
 async function removeToken() {
-  if (Platform.OS !== 'web') await SecureStore.deleteItemAsync(SESSION_KEY);
+  if (Platform.OS === 'web') globalThis.localStorage?.removeItem(SESSION_KEY);
+  else await SecureStore.deleteItemAsync(SESSION_KEY);
 }
 
 async function apiRequest(path: string, token: string, init: RequestInit = {}) {
@@ -130,13 +130,19 @@ export function AppStateProvider({ children }: PropsWithChildren) {
         if (!active) return;
         if (savedToken) {
           try {
-            const data = await apiRequest('/auth/me', savedToken);
-            if (!active) return;
-            setToken(savedToken);
-            setAccount(data.user);
-            setAgeGroupState(data.user.age_group);
+            const response = await fetch(`${API_URL}/auth/me`, { headers: { Authorization: `Bearer ${savedToken}` } });
+            if (response.status === 401) await removeToken();
+            else if (response.ok) {
+              const data = await response.json();
+              if (!active) return;
+              setToken(savedToken);
+              setAccount(data.user);
+              setAgeGroupState(data.user.age_group);
+            } else if (active) {
+              setAuthError('Could not verify your saved sign-in. Check the server connection and reopen Profile.');
+            }
           } catch {
-            await removeToken();
+            if (active) setAuthError('Could not reach the server to verify your saved sign-in. Your saved session was kept.');
           }
         }
       } catch {

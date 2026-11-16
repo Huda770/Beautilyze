@@ -24,7 +24,6 @@ export default function ReportScreen() {
         <View style={{ flex: 1, justifyContent: 'center', gap: 8 }}>
           <Label style={{ fontSize: 24 }}>{titleCase(analysis.skin_type)} skin</Label>
           <Body style={{ color: palette.ink }}>{analysis.explanations?.skin_type || 'An estimate from your photo, not a medical assessment.'}</Body>
-          {analysis.note ? <Body style={{ color: palette.ink }}>{analysis.note}</Body> : null}
         </View>
         <Image source={skinTypeImage(analysis.skin_type)} style={{ width: 95, height: 113, borderRadius: 18, backgroundColor: palette.cream }} resizeMode="cover" />
       </View>
