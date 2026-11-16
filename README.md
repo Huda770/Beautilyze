@@ -41,6 +41,14 @@ Training expects separate `Dataset/train` and `Dataset/valid` folders, each with
 
 The repository does not currently include the image dataset. The configured checkpoint has three outputs, but its training labels and held-out accuracy are not independently documented here.
 
+
+## Dataset
+
+The dataset is not stored in this repository because of its size and because it contains face photos.
+
+[Download the dataset (Google Drive)](PASTE-LINK-HERE)
+
+Access is restricted: request access through the link, and the team will approve it.
 ## Recommendations and user guidance
 
 Skin goals are selected by the user and guide product recommendations; they are not detected from the photo. Recommendations use `RecLogic.csv` and the SQLite product catalogue (`python setup_db.py` rebuilds it from `products.py`), including skin suitability, ingredient matching, selected categories, and allergy/sensitivity exclusions. Photo-based skin type estimates are informational and are not medical diagnoses.
