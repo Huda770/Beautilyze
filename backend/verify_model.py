@@ -12,14 +12,12 @@ BASE_DIR = Path(__file__).resolve().parent
 checkpoint_path = BASE_DIR / CHECKPOINT_NAME
 class_names_path = BASE_DIR / "class_names.json"
 
-# The saved class mapping must match the configured output order.
 configured_names = json.loads(class_names_path.read_text(encoding="utf-8"))
 if configured_names != list(CLASS_NAMES):
     raise SystemExit(
         f"Class mapping mismatch: config={list(CLASS_NAMES)}, file={configured_names}"
     )
 
-# Strict loading plus explicit head and output shape checks.
 state = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
 model = build_model(len(CLASS_NAMES))
 model.load_state_dict(state, strict=True)

@@ -2,14 +2,14 @@ import { PropsWithChildren, ReactNode } from 'react';
 import { Pressable, PressableProps, StyleSheet, Text, TextProps, View, ViewProps } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Shared brand colors from the Beautilyze logo: cream, blush, mauve, and soft lavender.
+
 export const palette = {
   ink: '#3C2633', muted: '#6F6370', accent: '#61435C', accentDark: '#4A3046',
   soft: '#F6E4E3', lavender: '#E9E1F2', cream: '#FDF8F6', white: '#FFFFFF', line: '#EADDDB',
   blush: '#EFC9C6', lilac: '#B9A3D1', plum: '#65427B', danger: '#A6423A',
 };
 
-// DM Serif Display for headlines and DM Sans for everything else, loaded in the root layout.
+
 export const fonts = {
   serif: 'DMSerifDisplay_400Regular', regular: 'DMSans_400Regular', medium: 'DMSans_500Medium', bold: 'DMSans_700Bold',
 };
@@ -39,7 +39,7 @@ export function Button({ title, secondary, icon, ...props }: PressableProps & { 
   return <Pressable accessibilityRole="button" {...props} style={({ pressed }) => [styles.button, secondary && styles.buttonSecondary, props.style as object, props.disabled && { opacity: 0.5 }, pressed && styles.pressed]}>{icon}{<Text style={[styles.buttonText, secondary && styles.buttonTextSecondary]}>{title}</Text>}</Pressable>;
 }
 
-// Shared layout, text, button, and chip styles for the app.
+
 export const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: palette.cream },
   scroll: { paddingHorizontal: 22, paddingTop: 20, paddingBottom: 42, gap: 16 },

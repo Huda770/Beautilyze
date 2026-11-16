@@ -3,7 +3,6 @@
 import torch.nn as nn
 from torchvision import models, transforms
 
-# Output-neuron order, input size and normalization shared by every model script.
 CLASS_NAMES = ("combination", "dry", "oily")
 IMAGE_SIZE = 224
 NORMALIZE_MEAN = (0.485, 0.456, 0.406)
@@ -11,7 +10,6 @@ NORMALIZE_STD = (0.229, 0.224, 0.225)
 CHECKPOINT_NAME = "skin_type_model.pth"
 
 
-# Model architecture and the non-augmented preprocessing used outside training.
 def build_model(num_classes=len(CLASS_NAMES), weights=None):
     """ResNet18 with the dropout + linear head every checkpoint is saved with."""
     model = models.resnet18(weights=weights)

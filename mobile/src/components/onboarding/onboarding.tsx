@@ -1,5 +1,4 @@
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { Easing, FadeIn, FadeInDown, FadeInRight, FadeOut, FadeOutLeft, Keyframe, useReducedMotion } from 'react-native-reanimated';
@@ -11,11 +10,9 @@ import { useAppState } from '@/state/app-state';
 import { hasCompletedOnboarding, markOnboardingComplete } from '@/state/onboarding-storage';
 
 const logo = require('@/assets/images/beautilyze-logo.png');
-const SLIDES = 5;
+const SLIDES = 4;
 
-type AuthTarget = 'register' | 'signin' | null;
 
-// Shows the welcome slides once, for visitors who are not signed in, above the tab navigator.
 export function OnboardingGate() {
   const { authReady, account } = useAppState();
   const [completed, setCompleted] = useState<boolean | null>(null);
@@ -24,17 +21,15 @@ export function OnboardingGate() {
 
   if (!authReady || completed !== false || account) return null;
 
-  function finish(target: AuthTarget) {
+  function finish() {
     markOnboardingComplete();
     setCompleted(true);
-    // Sign-in and registration live in the Profile tab; the mode parameter opens the matching form.
-    if (target) router.navigate({ pathname: '/profile', params: { mode: target } });
   }
 
   return <Onboarding onFinish={finish} />;
 }
 
-function Onboarding({ onFinish }: { onFinish: (target: AuthTarget) => void }) {
+function Onboarding({ onFinish }: { onFinish: () => void }) {
   const [index, setIndex] = useState(0);
   const [direction, setDirection] = useState<1 | -1>(1);
   const reduceMotion = useReducedMotion();
@@ -56,14 +51,13 @@ function Onboarding({ onFinish }: { onFinish: (target: AuthTarget) => void }) {
     <SlideText key="routine" eyebrow="Your routine" title="Simple steps, morning and night" body="Product matches follow your skin type and goals, and skip ingredients you have told us to avoid.">
       <RoutineCards width={contentWidth} />
     </SlideText>,
-    <WelcomeSlide key="welcome" logoSize={Math.min(contentWidth * 0.42, height * 0.2)} onFinish={onFinish} />,
   ];
 
   const last = index === SLIDES - 1;
   return <View style={[styles.overlay, { width, height, paddingTop: insets.top + 8, paddingBottom: insets.bottom + 16 }]} accessibilityViewIsModal>
     <View style={[styles.topBar, { width: contentWidth }]}>
       {index > 0 ? <Pressable accessibilityRole="button" accessibilityLabel="Previous slide" hitSlop={12} onPress={() => go(index - 1)}><Text style={styles.topLink}>Back</Text></Pressable> : <View />}
-      {!last ? <Pressable accessibilityRole="button" accessibilityLabel="Skip introduction and go to sign in options" hitSlop={12} onPress={() => go(SLIDES - 1)}><Text style={styles.topLink}>Skip</Text></Pressable> : null}
+      {!last ? <Pressable accessibilityRole="button" accessibilityLabel="Skip introduction" hitSlop={12} onPress={() => go(SLIDES - 1)}><Text style={styles.topLink}>Skip</Text></Pressable> : null}
     </View>
 
     <Animated.View key={index} entering={entering} exiting={exiting} style={styles.slideArea}>
@@ -72,12 +66,12 @@ function Onboarding({ onFinish }: { onFinish: (target: AuthTarget) => void }) {
       </ScrollView>
     </Animated.View>
 
-    {!last ? <View style={[styles.footer, { width: contentWidth }]}>
+    <View style={[styles.footer, { width: contentWidth }]}>
       <View style={styles.dots} accessible accessibilityLabel={`Slide ${index + 1} of ${SLIDES}`}>
         {Array.from({ length: SLIDES }, (_, dot) => <View key={dot} style={[styles.dot, dot === index && styles.dotActive]} />)}
       </View>
-      <BrandButton title="Next   →" label="Next slide" onPress={() => go(index + 1)} />
-    </View> : null}
+      <BrandButton title={last ? 'Get started' : 'Next   →'} label={last ? 'Get started' : 'Next slide'} onPress={() => last ? onFinish() : go(index + 1)} />
+    </View>
   </View>;
 }
 
@@ -151,22 +145,6 @@ function RoutineCards({ width }: { width: number }) {
         <Text style={[styles.small, { color: brand.ink }]}>{step}</Text>
       </View>)}
     </View>)}
-  </View>;
-}
-
-function WelcomeSlide({ logoSize, onFinish }: { logoSize: number; onFinish: (target: AuthTarget) => void }) {
-  return <View style={{ alignItems: 'center', gap: 16, paddingTop: 8 }}>
-    <Image source={logo} style={{ width: logoSize, height: logoSize }} contentFit="contain" accessibilityLabel="Beautilyze logo" />
-    <Text style={[styles.title, { textAlign: 'center' }]} accessibilityRole="header">Welcome to Beautilyze</Text>
-    <Text style={[styles.body, { textAlign: 'center', maxWidth: 330 }]}>Create an account to keep your age range and preferences, or sign in to pick up where you left off.</Text>
-    <View style={{ alignSelf: 'stretch', gap: 12, marginTop: 8 }}>
-      <BrandButton title="Create account" label="Create a Beautilyze account" onPress={() => onFinish('register')} />
-      <BrandButton title="Sign in" label="Sign in to your Beautilyze account" secondary onPress={() => onFinish('signin')} />
-      <Pressable accessibilityRole="button" accessibilityLabel="Continue without an account" hitSlop={8} onPress={() => onFinish(null)} style={{ paddingVertical: 10 }}>
-        <Text style={[styles.topLink, { textAlign: 'center' }]}>Explore without an account</Text>
-      </Pressable>
-    </View>
-    <Text style={[styles.small, { textAlign: 'center', fontSize: 12 }]}>For everyday skincare guidance, not a medical diagnosis.</Text>
   </View>;
 }
 

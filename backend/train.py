@@ -13,27 +13,19 @@ from model_config import CLASS_NAMES, IMAGE_SIZE, NORMALIZE_MEAN, NORMALIZE_STD,
 BASE_DIR = Path(__file__).resolve().parent
 CANDIDATE_PATH = BASE_DIR / 'skin_type_model_3class.pth'
 
-# Data: augmented training images and plain validation images in the configured class order.
-# Training transform - includes augmentation to prevent memorization
 train_transform = transforms.Compose([
-    # Random crop/zoom varies framing without touching color or brightness
     transforms.RandomResizedCrop(IMAGE_SIZE, scale=(0.8, 1.0)),
     transforms.RandomHorizontalFlip(),
     transforms.RandomRotation(10),
-    # No ColorJitter: brightness/contrast are key cues for oily vs dry vs combination
     transforms.ToTensor(),
     transforms.Normalize(mean=NORMALIZE_MEAN, std=NORMALIZE_STD)
 ])
 
-# Validation transform - no augmentation, just resize/normalize
 valid_transform = inference_transform()
 
-# Use separate train and validation folders. Keep any test split completely
-# outside this script so it remains unseen during model selection.
 train_data = datasets.ImageFolder(BASE_DIR / 'Dataset' / 'train', transform=train_transform)
 valid_data = datasets.ImageFolder(BASE_DIR / 'Dataset' / 'valid', transform=valid_transform)
 
-# Both folders must have the same class folders, or labels would not line up
 assert train_data.classes == valid_data.classes, \
     f"Class mismatch: train={train_data.classes}, valid={valid_data.classes}"
 assert tuple(train_data.classes) == CLASS_NAMES, \
@@ -49,45 +41,33 @@ print("Classes found:", class_names)
 print("Number of training images:", len(train_data))
 print("Number of validation images:", len(valid_data))
 
-# Count training images per class (for class weights)
 class_counts = torch.bincount(torch.tensor(train_data.targets), minlength=num_classes)
 print("Training images per class:", dict(zip(class_names, class_counts.tolist())))
 
-# Model: pretrained ResNet18 with only layer4 and the new head trainable.
 model = build_model(num_classes, weights='IMAGENET1K_V1')
 
-# Freeze all layers first
 for param in model.parameters():
     param.requires_grad = False
 
-# Unfreeze only the last block (layer4) so it can adapt to skin features
 for param in model.layer4.parameters():
     param.requires_grad = True
 
-# The new dropout + linear head stays trainable
 for param in model.fc.parameters():
     param.requires_grad = True
 
-# Use GPU if available, otherwise CPU
 device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 model = model.to(device)
 print("Training on:", device)
 
-# Class weights: rarer classes (e.g. oily) count more in the loss,
-# so the model doesn't just lean towards the biggest class
 class_weights = len(train_data) / (num_classes * class_counts.float())
 print("Class weights:", dict(zip(class_names, [round(w, 3) for w in class_weights.tolist()])))
 
-# Loss function and optimizer
 criterion = nn.CrossEntropyLoss(weight=class_weights.to(device))
 optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()),
                        lr=0.0005, weight_decay=1e-4)
 
-# Learning rate schedule: divide the learning rate by 10 every 7 epochs
-# so the model takes smaller, steadier steps later in training
 scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
 
-# Training loop, keeping the checkpoint with the best validation accuracy.
 num_epochs = 20
 best_valid_accuracy = 0.0
 
@@ -115,7 +95,6 @@ for epoch in range(num_epochs):
     current_lr = optimizer.param_groups[0]['lr']
     scheduler.step()
 
-    # Evaluate on validation set after every epoch
     model.eval()
     valid_correct = 0
     valid_total = 0
@@ -132,7 +111,6 @@ for epoch in range(num_epochs):
     print(f"Epoch {epoch+1}/{num_epochs} - LR: {current_lr:.6f} - Loss: {running_loss:.4f} - "
           f"Train Accuracy: {train_accuracy:.2f}% - Validation Accuracy: {valid_accuracy:.2f}%")
 
-    # Save the model only when validation accuracy improves
     if valid_accuracy > best_valid_accuracy:
         best_valid_accuracy = valid_accuracy
         torch.save(model.state_dict(), CANDIDATE_PATH)
@@ -140,7 +118,6 @@ for epoch in range(num_epochs):
 
 print(f"Best Validation Accuracy: {best_valid_accuracy:.2f}%")
 
-# Per-class accuracy of the best saved model on the validation set
 model.load_state_dict(torch.load(CANDIDATE_PATH, map_location=device, weights_only=True))
 model.eval()
 class_correct = torch.zeros(num_classes)

@@ -9,7 +9,6 @@ from model_config import CLASS_NAMES
 
 BASE_DIR = Path(__file__).resolve().parent
 
-# app.py refuses to start if class_names.json and CLASS_NAMES disagree, so check before writing.
 classes = datasets.ImageFolder(BASE_DIR / 'Dataset' / 'train').classes
 if tuple(classes) != CLASS_NAMES:
     raise SystemExit(f"Training folders {classes} do not match model_config.CLASS_NAMES {list(CLASS_NAMES)}")

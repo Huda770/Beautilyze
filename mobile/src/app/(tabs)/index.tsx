@@ -3,11 +3,12 @@ import { ScrollView, Text, View } from 'react-native';
 import { Body, Button, Card, Label, fonts, palette, Screen, styles } from '@/components/beautilyze-ui';
 import { useAppState } from '@/state/app-state';
 
-// The home screen links to analysis and shows the latest in-memory result.
+
 export default function HomeScreen() {
-  const { latestAnalysis: analysis } = useAppState();
+  const { latestAnalysis, account } = useAppState();
+  const analysis = account ? latestAnalysis : null;
   return <Screen><ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-    {/* Brand header and the main path into analysis. */}
+    {}
     <View style={{ paddingTop: 8, gap: 5 }}><Text style={{ color: palette.accent, fontSize: 14, fontFamily: fonts.bold, letterSpacing: 1.1 }}>BEAUTILYZE</Text><Text style={{ color: palette.muted, fontSize: 13 }}>A little care, made personal</Text></View>
     <View style={{ borderRadius: 26, backgroundColor: palette.soft, padding: 23, gap: 14, overflow: 'hidden' }}>
       <Text style={{ fontSize: 12, color: palette.accent, fontFamily: fonts.bold, letterSpacing: 1.5 }}>YOUR SKIN, YOUR WAY</Text>

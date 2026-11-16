@@ -4,7 +4,7 @@ import { Platform } from 'react-native';
 const STORAGE_KEY = 'beautilyze-onboarding-complete';
 const ONBOARDING_FILE = 'beautilyze-onboarding-complete.txt';
 
-// Remember on this device that the welcome slides were finished, so they show only once.
+
 export async function hasCompletedOnboarding() {
   try {
     if (Platform.OS === 'web') return globalThis.localStorage?.getItem(STORAGE_KEY) === 'yes';
@@ -22,6 +22,6 @@ export function markOnboardingComplete() {
     file.create({ intermediates: true, overwrite: true });
     file.write('yes');
   } catch {
-    // If the flag cannot be saved, the slides simply appear again next launch.
+    
   }
 }

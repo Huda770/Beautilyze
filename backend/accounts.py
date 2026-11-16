@@ -13,13 +13,11 @@ from flask import Blueprint, g, jsonify, request
 from werkzeug.security import check_password_hash, generate_password_hash
 
 
-# Account settings and the shared SQLite connection/schema helpers.
 AGE_GROUPS = {"14-18", "19-25", "26-35", "36-45", "45+"}
 SESSION_DAYS = 30
 LOGIN_FAILURE_LIMIT = 10
 LOGIN_FAILURE_WINDOW = timedelta(minutes=15)
 EMAIL_PATTERN = re.compile(r"[^\s@]+@[^\s@]+\.[^\s@]+")
-# Compared against when an email is unknown so login timing does not reveal which emails exist.
 DUMMY_PASSWORD_HASH = generate_password_hash(secrets.token_urlsafe(16))
 
 
@@ -58,7 +56,6 @@ def initialize_accounts_database(database):
         connection.execute("CREATE INDEX IF NOT EXISTS auth_sessions_user_id ON auth_sessions(user_id)")
 
 
-# Small pure helpers for time, token hashing, request bodies and response shapes.
 def utc_now():
     return datetime.now(timezone.utc)
 
@@ -87,7 +84,6 @@ def fetch_public_user(connection, user_id):
     return connection.execute("SELECT id, email, age_group FROM users WHERE id = ?", (user_id,)).fetchone()
 
 
-# Brute-force protection: recent failed sign-ins counted per client address and per email.
 class LoginThrottle:
     """In-memory and per process, so limits reset when the server restarts."""
 
@@ -125,7 +121,6 @@ class LoginThrottle:
             self.failures.pop(key, None)
 
 
-# The /auth blueprint: session issuing, the auth guard and its routes.
 def create_auth_blueprint(database):
     auth = Blueprint("auth", __name__)
     throttle = LoginThrottle()
@@ -134,7 +129,6 @@ def create_auth_blueprint(database):
         token = secrets.token_urlsafe(32)
         now = utc_now()
         with connect(database) as connection:
-            # Expired sessions are otherwise removed only when someone presents them.
             connection.execute("DELETE FROM auth_sessions WHERE expires_at <= ?", (now.isoformat(),))
             connection.execute(
                 "INSERT INTO auth_sessions(token_hash, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)",
@@ -204,7 +198,6 @@ def create_auth_blueprint(database):
         if not user or not password_ok:
             throttle.record_failure(throttle_keys)
             return jsonify({"error": "Email or password is incorrect."}), 401
-        # Only the email's counter is cleared, so one valid account cannot unlock a guessing address.
         throttle.reset(email_key)
         return jsonify({"user": public_user(user), "token": issue_session(user["id"])}), 200
 

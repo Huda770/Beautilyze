@@ -4,7 +4,7 @@ import { PageTitle, fonts, palette, Screen, styles } from '@/components/beautily
 import { ROUTINES } from '@/constants/routines';
 import { useAppState } from '@/state/app-state';
 
-// Always shows the three routine categories; each opens its own detail page.
+
 export default function RoutineScreen() {
   const { routineAssignments } = useAppState();
   return <Screen><ScrollView contentContainerStyle={styles.scroll}>

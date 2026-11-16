@@ -18,7 +18,7 @@ import { ThemedView } from './themed-view';
 
 import { Colors, MaxContentWidth, Spacing } from '@/constants/theme';
 
-// Web uses Expo Router tabs instead of the native bottom bar.
+
 export default function AppTabs() {
   return (
     <Tabs>
@@ -62,7 +62,7 @@ export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps
   );
 }
 
-// Style the web tab bar to match the selected theme.
+
 export function CustomTabList(props: TabListProps) {
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];

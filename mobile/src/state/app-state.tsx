@@ -10,7 +10,7 @@ const SESSION_KEY = 'beautilyze.auth-token';
 const PREFERENCES_KEY = 'beautilyze.preferences.v1';
 const PREFERENCES_FILE = 'beautilyze-preferences-v1.json';
 
-// Analysis, routine and account types shared by the screens.
+
 export type ProductRecommendation = {
   name: string;
   category: string;
@@ -118,6 +118,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
   const [concerns, setConcerns] = useState<string[]>([]);
   const [routineAssignments, setRoutineAssignments] = useState<RoutineAssignments>(emptyRoutines);
   const [preferencesReady, setPreferencesReady] = useState(false);
+  const [accountAnalysisReady, setAccountAnalysisReady] = useState(false);
   const analysis = storedAnalysis && normalizeList(storedAnalysis.allergies || []) === normalizeList(allergies)
     ? storedAnalysis : null;
 
@@ -151,23 +152,44 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     let active = true;
     readPreferences().then((saved) => {
       if (!active) return;
-      if (saved) { setAgeGroupState(saved.ageGroup); setAllergies(saved.allergies); setConcerns(saved.concerns); setAnalysis(saved.analysis); setRoutineAssignments(saved.routineAssignments); }
+      if (saved) { setAgeGroupState(saved.ageGroup); setAllergies(saved.allergies); setConcerns(saved.concerns); setRoutineAssignments(saved.routineAssignments); }
       setPreferencesReady(true);
     });
     return () => { active = false; };
   }, []);
 
   useEffect(() => {
-    if (preferencesReady) void writePreferences({ ageGroup, allergies, concerns, analysis: storedAnalysis, routineAssignments }).catch(() => {});
-  }, [preferencesReady, ageGroup, allergies, concerns, storedAnalysis, routineAssignments]);
+    if (!authReady || !preferencesReady) return;
+    let active = true;
+    if (!account) {
+      Promise.resolve().then(() => {
+        if (active) { setAnalysis(null); setAccountAnalysisReady(true); }
+      });
+      return () => { active = false; };
+    }
+    readPreferences().then((saved) => {
+      if (active) { setAnalysis(saved?.analysis ?? null); setAccountAnalysisReady(true); }
+    });
+    return () => { active = false; };
+  }, [authReady, preferencesReady, account]);
+
+  useEffect(() => {
+    if (preferencesReady && accountAnalysisReady) void writePreferences({ ageGroup, allergies, concerns, analysis: account ? storedAnalysis : null, routineAssignments }).catch(() => {});
+  }, [preferencesReady, accountAnalysisReady, account, ageGroup, allergies, concerns, storedAnalysis, routineAssignments]);
 
   async function signIn(email: string, password: string, register = false) {
     setAuthError('');
-    const response = await fetch(`${API_URL}/auth/${register ? 'register' : 'login'}`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-    const result = await readJsonResponse(response, 'We could not sign you in.') as AuthResult;
+    let response: Response;
+    try {
+      response = await fetch(`${API_URL}/auth/${register ? 'register' : 'login'}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+    } catch {
+      throw new Error(`Can't reach the Beautilyze server at ${API_URL}. Make sure the backend is running and your phone can reach this computer.`);
+    }
+    const action = register ? 'create your account' : 'sign you in';
+    const result = await readJsonResponse(response, `The server returned an unexpected response while trying to ${action} (HTTP ${response.status}). Check that the current backend is running.`) as AuthResult;
     await saveToken(result.token);
     setToken(result.token);
     setAccount(result.user);

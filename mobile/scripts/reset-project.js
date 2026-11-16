@@ -1,10 +1,6 @@
 #!/usr/bin/env node
 
-/**
- * This script is used to reset the project to a blank state.
- * It deletes or moves the /src and /scripts directories to /example based on user input and creates a new /src/app directory with an index.tsx and _layout.tsx file.
- * You can remove the `reset-project` script from package.json and safely delete this file after running it.
- */
+
 
 const fs = require("fs");
 const path = require("path");
@@ -50,7 +46,7 @@ const rl = readline.createInterface({
 const moveDirectories = async (userInput) => {
   try {
     if (userInput === "y") {
-      // Create the app-example directory
+      
       await fs.promises.mkdir(exampleDirPath, { recursive: true });
       console.log(`📁 /${exampleDir} directory created.`);
     }

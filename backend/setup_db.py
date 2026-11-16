@@ -8,7 +8,6 @@ from products import PRODUCTS_TABLE_SQL, insert_catalogue
 
 DATABASE_PATH = Path(__file__).resolve().parent / 'skincare.db'
 
-# Replace existing catalogue rows so re-running this script does not duplicate them.
 with closing(sqlite3.connect(DATABASE_PATH)) as connection, connection:
     connection.execute(PRODUCTS_TABLE_SQL)
     connection.execute('DELETE FROM products')

@@ -8,7 +8,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 const INITIAL_SCALE_FACTOR = Dimensions.get('screen').height / 90;
 const DURATION = 600;
 
-// Hide the native splash, then fade this branded overlay away.
+
 export function AnimatedSplashOverlay() {
   const [animate, setAnimate] = useState(false);
   const [visible, setVisible] = useState(true);
@@ -96,7 +96,7 @@ const glowKeyframe = new Keyframe({
   },
 });
 
-// Reusable animated logo shown inside the splash overlay.
+
 export function AnimatedIcon() {
   return (
     <View style={styles.iconContainer}>

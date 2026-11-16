@@ -1,4 +1,3 @@
-# Seed catalogue of products with their category, suitable skin tags and selected ingredients.
 products = [
     {
         "name": "CeraVe Foaming Facial Cleanser",
@@ -73,7 +72,6 @@ products = [
         "Xanthan Gum", "Carbomer", "Tocopherol", "Ceramide EOP"]
     },
 
-      # ---- DRY SKIN ----
     {
         "name": "CeraVe Hydrating Facial Cleanser",
         "category": "cleanser",
@@ -135,7 +133,6 @@ products = [
         "ingredients": ["Glycerin"]
     },
 
-    # ---- OILY SKIN ----
     {
         "name": "COSRX Low pH Good Morning Gel Cleanser",
         "category": "cleanser",
@@ -197,7 +194,6 @@ products = [
         "ingredients": ["Hyaluronic Acid"]
     },
 
-    # ---- ACNE-PRONE SKIN ----
     {
         "name": "PanOxyl Acne Foaming Wash 4% Benzoyl Peroxide",
         "category": "cleanser",
@@ -259,7 +255,6 @@ products = [
         "ingredients": ["Niacinamide"]
     },
 
-    # ---- HEALTHY SKIN / MAINTENANCE ----
     {
         "name": "Cetaphil Gentle Skin Cleanser",
         "category": "cleanser",
@@ -279,7 +274,6 @@ products = [
         "ingredients": ["Vitamin C"]
     },
 
-    # ---- CONCERN-TARGETED SERUMS ----
     {
         "name": "The Ordinary Alpha Arbutin 2% + HA",
         "category": "serum",
@@ -337,7 +331,6 @@ products = [
 ]
 
 
-# Creating and filling the SQLite products table from the seed catalogue.
 PRODUCTS_TABLE_SQL = '''
     CREATE TABLE IF NOT EXISTS products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

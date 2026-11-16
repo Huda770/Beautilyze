@@ -10,7 +10,7 @@ import { useAppState } from '@/state/app-state';
 
 export default function AnalyzeScreen() {
   const { ageGroup, allergies, concerns, analysis, setAnalysis } = useAppState();
-  // The report widget appears once this screen has produced a successful analysis.
+  
   const [photo, setPhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');

@@ -11,22 +11,18 @@ import pandas as pd
 BASE_DIR = Path(__file__).resolve().parent
 
 
-# Ingredient-name normalization and allergy/sensitivity matching.
 def normalize_ingredient(value):
     """Compare ingredient labels without case, spacing or punctuation differences."""
     return " ".join(re.findall(r"[^\W_]+", unicodedata.normalize("NFKC", value).casefold()))
 
 
 def contains_avoided_ingredient(ingredients, avoid):
-    # Whole phrases allow labels such as "Niacinamide (Vitamin B3)" while
-    # avoiding substring collisions such as "tea" and "stearic acid".
     return any(
         f" {term} " in f" {normalize_ingredient(ingredient)} "
         for ingredient in ingredients for term in avoid
     )
 
 
-# Label mappings between the model, RecLogic.csv and the product catalogue.
 CNN_TO_CSV_SKIN_TYPE = {
     "oily": "Oily",
     "dry": "Dry",
@@ -40,30 +36,24 @@ CNN_TO_PRODUCT_SKIN_TYPE = {
     "combination": "combination-skin",
 }
 
-# Match every age label the app and API accept to the groups present in RecLogic.csv.
-# “Prefer not to say” deliberately skips age filtering.
 AGE_GROUP_TO_DATASET = {
-    # Current mobile/account age ranges.
     '14-18': '14-18',
     '19-25': '19-24',
     '26-35': '25-36',
     '36-45': '37-45',
     '45+': '45+',
-    # Earlier profile labels.
     'Under 18': '14-18',
     '18-24': '19-24',
     '25-34': '25-36',
     '35-44': '37-45',
     '45 and above': '45+',
     'Prefer not to say': None,
-    # Dataset labels themselves.
     '19-24': '19-24',
     '25-36': '25-36',
     '37-45': '37-45',
 }
 
 
-# Ideal ingredients for a skin type, concerns and age group from RecLogic.csv.
 df = pd.read_csv(BASE_DIR / 'RecLogic.csv')
 
 
@@ -90,7 +80,6 @@ def get_ideal_ingredients(skin_type, concerns, age_group):
     return ingredient_set
 
 
-# Catalogue loading, scoring and routine assembly.
 def get_products(database_path=None):
     with closing(sqlite3.connect(database_path or BASE_DIR / 'skincare.db')) as conn:
         rows = conn.execute('SELECT name, category, skin_types, ingredients FROM products').fetchall()
@@ -119,7 +108,6 @@ def score_products(skin_type, ideal_ingredients, allergies=None, database_path=N
     scored = []
 
     for product in get_products(database_path):
-        # Exclude before scoring; an unknown ingredient list cannot be checked.
         if avoid and (not product["ingredients"] or contains_avoided_ingredient(product["ingredients"], avoid)):
             continue
         if product_skin_type not in (s.lower() for s in product["skin_types"]):
@@ -133,7 +121,6 @@ def score_products(skin_type, ideal_ingredients, allergies=None, database_path=N
             "matched_ingredients": list(overlap),
         })
 
-    # Stable sort keeps catalogue order among equal scores.
     scored.sort(key=lambda x: x["score"], reverse=True)
     return scored
 

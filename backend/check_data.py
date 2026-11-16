@@ -9,10 +9,8 @@ from model_config import IMAGE_SIZE
 
 BASE_DIR = Path(__file__).resolve().parent
 
-# Training images, resized only, from the same folder train.py uses.
 train_data = datasets.ImageFolder(BASE_DIR / 'Dataset' / 'train', transform=transforms.Resize((IMAGE_SIZE, IMAGE_SIZE)))
 
-# Nine samples spread evenly across the dataset.
 step = max(1, len(train_data) // 9)
 fig, axes = plt.subplots(3, 3, figsize=(8, 8))
 for i, ax in enumerate(axes.flat):

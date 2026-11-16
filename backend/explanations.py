@@ -1,7 +1,6 @@
 """Plain-language explanations for Beautilyze's actual result labels."""
 
 
-# Explanation text for each model label and each supported skin goal.
 SKIN_TYPE_EXPLANATIONS = {
     'combination': 'Some areas of your face may feel oilier than others, while other areas may feel balanced or dry.',
     'dry': 'Your skin may produce less oil, so it can sometimes feel tight, rough, or flaky.',
@@ -23,7 +22,6 @@ CONCERN_EXPLANATIONS = {
 }
 
 
-# Explanations for one result, limited to the goals the user selected.
 def explanations_for(skin_type: str, concerns: list[str]) -> dict:
     return {
         'skin_type': SKIN_TYPE_EXPLANATIONS.get(skin_type),

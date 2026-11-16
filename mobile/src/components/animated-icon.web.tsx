@@ -5,7 +5,7 @@ import Animated, { Keyframe, Easing } from 'react-native-reanimated';
 import classes from './animated-icon.module.css';
 const DURATION = 300;
 
-// Browsers manage the splash screen, so this overlay is empty on web.
+
 export function AnimatedSplashOverlay() {
   return null;
 }
@@ -55,7 +55,7 @@ const glowKeyframe = new Keyframe({
   },
 });
 
-// Web version of the reusable animated logo.
+
 export function AnimatedIcon() {
   return (
     <View style={styles.iconContainer}>

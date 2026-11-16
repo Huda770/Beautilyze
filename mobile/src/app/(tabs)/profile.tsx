@@ -18,7 +18,7 @@ export default function ProfileScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
-  // The welcome screen opens Profile with mode=register or mode=signin to show the matching form.
+  
   const [appliedMode, setAppliedMode] = useState(mode);
   if (mode !== appliedMode) {
     setAppliedMode(mode);

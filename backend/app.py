@@ -6,6 +6,8 @@ import io
 import json
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from accounts import create_auth_blueprint, initialize_accounts_database
+from explanations import explanations_for
 import json as json_lib
 import os
 import sqlite3
@@ -18,11 +20,10 @@ app = Flask(__name__)
 CORS(app)
 
 BASE_DIR = Path(__file__).resolve().parent
+DATABASE_PATH = BASE_DIR / 'skincare.db'
 
-# Create the local catalogue on first run without overwriting user data
 def initialize_product_database():
-    database = BASE_DIR / 'skincare.db'
-    with sqlite3.connect(database) as connection:
+    with sqlite3.connect(DATABASE_PATH) as connection:
         connection.execute('''
             CREATE TABLE IF NOT EXISTS products (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,9 +43,9 @@ def initialize_product_database():
 
 
 initialize_product_database()
+initialize_accounts_database(DATABASE_PATH)
+app.register_blueprint(create_auth_blueprint(DATABASE_PATH))
 
-# Load all local validation cascades once. Requiring multiple independent
-# signals reduces false positives from textures and objects in arbitrary photos.
 CASCADE_DIR = Path(cv2.data.haarcascades)
 FACE_CASCADE = cv2.CascadeClassifier(str(CASCADE_DIR / 'haarcascade_frontalface_default.xml'))
 ALT_FACE_CASCADE = cv2.CascadeClassifier(str(CASCADE_DIR / 'haarcascade_frontalface_alt2.xml'))
@@ -57,18 +58,15 @@ for cascade, filename in (
     if cascade.empty():
         raise RuntimeError(f'OpenCV could not load its required cascade: {CASCADE_DIR / filename}')
 
-# Load class names
 with open('class_names.json', 'r') as f:
     class_names = json.load(f)
 
-# Rebuild the same model structure used in training
 model = models.resnet18(weights=None)
 model.fc = nn.Sequential(
     nn.Dropout(0.5),
     nn.Linear(model.fc.in_features, len(class_names))
 )
 
-# Load your trained weights
 model.load_state_dict(torch.load('skin_type_model.pth', map_location='cpu'))
 model.eval()
 
@@ -129,7 +127,6 @@ def health():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    # Check if an image was actually uploaded
     if 'image' not in request.files or request.files['image'].filename == '':
         return jsonify({"error": "No image uploaded. Please select a photo."}), 400
 
@@ -159,7 +156,6 @@ def predict():
 
     predicted_skin_type = class_names[predicted_idx.item()]
 
-    # Warn if model isn't very confident
     low_confidence = confidence.item() < 0.5
 
     try:
@@ -179,7 +175,13 @@ def predict():
     if not routine:
         return jsonify({"error": "No suitable products found for your profile. Try different concerns."}), 200
 
-    response = {"routine": routine, "skin_type": predicted_skin_type, "confidence": confidence.item()}
+    response = {
+        "routine": routine,
+        "skin_type": predicted_skin_type,
+        "confidence": confidence.item(),
+        "result_reliable": not low_confidence,
+        "explanations": explanations_for(predicted_skin_type, concerns),
+    }
     if low_confidence:
         response["note"] = "Analysis confidence was low — for best results, use a clear, well-lit front-facing photo."
 
