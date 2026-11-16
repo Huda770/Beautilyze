@@ -46,7 +46,7 @@ The repository does not currently include the image dataset. The configured chec
 
 The dataset is not stored in this repository because of its size and because it contains face photos.
 
-[Download the dataset (Google Drive)](PASTE-LINK-HERE)
+[Download the dataset (Google Drive)](https://drive.google.com/file/d/1joS2cIpk--utd1_8xB4dWQsUeTZ8Cnv0/view?usp=drive_link)
 
 Access is restricted: request access through the link, and the team will approve it.
 ## Recommendations and user guidance
