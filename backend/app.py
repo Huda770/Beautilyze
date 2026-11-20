@@ -160,7 +160,10 @@ def predict():
     try:
         concerns = json_lib.loads(request.form.get('concerns', '[]'))
         selected_categories = json_lib.loads(request.form.get('categories', '[]'))
+        allergies = json_lib.loads(request.form.get('allergies', '[]'))
     except (TypeError, ValueError):
+        return jsonify({'error': 'Invalid analysis options.'}), 400
+    if not isinstance(allergies, list):
         return jsonify({'error': 'Invalid analysis options.'}), 400
     age_group = request.form.get('age_group', '14-18')
 
@@ -169,7 +172,7 @@ def predict():
         return jsonify({"error": "Please select at least one skin concern."}), 400
 
     routine_concerns = ['General'] if concerns == ['No Skin Concerns'] else concerns
-    routine = build_routine(predicted_skin_type, routine_concerns, age_group, selected_categories)
+    routine = build_routine(predicted_skin_type, routine_concerns, age_group, selected_categories, allergies=allergies)
 
     if not routine:
         return jsonify({"error": "No suitable products found for your profile. Try different concerns."}), 200
