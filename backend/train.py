@@ -1,4 +1,9 @@
-"""Fine-tune ResNet18 on Dataset/train, select on Dataset/valid, and save skin_type_model_3class.pth."""
+"""Fine-tune ResNet18 on Dataset/train, select on Dataset/valid, and save skin_type_model_3class.pth.
+
+Two-phase fine-tuning:
+  Phase 1 (epochs 1-5):  only the new head (dropout + linear) is trained, lr 0.001.
+  Phase 2 (epochs 6-35): the whole network is unfrozen and trained with a tiny lr, 0.00001.
+"""
 
 from pathlib import Path
 
@@ -10,15 +15,20 @@ from torchvision import datasets, transforms
 
 from model_config import CLASS_NAMES, IMAGE_SIZE, NORMALIZE_MEAN, NORMALIZE_STD, build_model, inference_transform
 
+torch.manual_seed(42)
+
 BASE_DIR = Path(__file__).resolve().parent
 CANDIDATE_PATH = BASE_DIR / 'skin_type_model_3class.pth'
 
+# Training transform - augmentation to prevent memorization.
+# No colour changes: brightness and contrast are key cues for oily vs dry vs combination.
 train_transform = transforms.Compose([
     transforms.RandomResizedCrop(IMAGE_SIZE, scale=(0.8, 1.0)),
     transforms.RandomHorizontalFlip(),
     transforms.RandomRotation(10),
     transforms.ToTensor(),
-    transforms.Normalize(mean=NORMALIZE_MEAN, std=NORMALIZE_STD)
+    transforms.Normalize(mean=NORMALIZE_MEAN, std=NORMALIZE_STD),
+    transforms.RandomErasing(p=0.5, scale=(0.02, 0.2))
 ])
 
 valid_transform = inference_transform()
@@ -46,11 +56,9 @@ print("Training images per class:", dict(zip(class_names, class_counts.tolist())
 
 model = build_model(num_classes, weights='IMAGENET1K_V1')
 
+# Phase 1: freeze everything except the new head
 for param in model.parameters():
     param.requires_grad = False
-
-for param in model.layer4.parameters():
-    param.requires_grad = True
 
 for param in model.fc.parameters():
     param.requires_grad = True
@@ -59,19 +67,26 @@ device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 model = model.to(device)
 print("Training on:", device)
 
+# Class weights: classes with fewer photos count more in the loss
 class_weights = len(train_data) / (num_classes * class_counts.float())
 print("Class weights:", dict(zip(class_names, [round(w, 3) for w in class_weights.tolist()])))
 
 criterion = nn.CrossEntropyLoss(weight=class_weights.to(device))
 optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()),
-                       lr=0.0005, weight_decay=1e-4)
+                       lr=0.001, weight_decay=1e-4)
 
-scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
-
-num_epochs = 20
+num_epochs = 35
+phase2_start = 5
 best_valid_accuracy = 0.0
 
 for epoch in range(num_epochs):
+    if epoch == phase2_start:
+        # Phase 2: unfreeze the whole network, tiny learning rate
+        for param in model.parameters():
+            param.requires_grad = True
+        optimizer = optim.Adam(model.parameters(), lr=1e-5, weight_decay=1e-4)
+        print("Phase 2: whole network unfrozen, learning rate 0.00001")
+
     model.train()
     running_loss = 0.0
     correct = 0
@@ -93,7 +108,6 @@ for epoch in range(num_epochs):
 
     train_accuracy = 100 * correct / total
     current_lr = optimizer.param_groups[0]['lr']
-    scheduler.step()
 
     model.eval()
     valid_correct = 0
