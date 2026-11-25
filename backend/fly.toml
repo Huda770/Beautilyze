@@ -1,0 +1,34 @@
+# Fly.io config for the Beautilyze Flask API (PyTorch + OpenCV + SQLite on a volume).
+# Change `app` if the name is taken, then update CORS_ORIGINS and mobile/.env.production.
+app = "beautilyze-api"
+primary_region = "fra"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8080"
+  DATABASE_PATH = "/data/skincare.db"
+  CORS_ORIGINS = "https://beautilyze.YOUR-SUBDOMAIN.workers.dev"
+
+[mounts]
+  source = "beautilyze_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    grace_period = "60s"
+    interval = "30s"
+    timeout = "10s"
+    method = "GET"
+    path = "/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "2gb"

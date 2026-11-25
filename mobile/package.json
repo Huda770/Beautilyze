@@ -36,15 +36,23 @@
     "@types/react": "~19.3.0",
     "eslint": "^9.39.5",
     "eslint-config-expo": "~58.0.4",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "wrangler": "^4.166.0"
   },
   "scripts": {
     "start": "expo start",
+    "build:web": "node ./scripts/build-web.js",
+    "preview:web": "wrangler dev --config wrangler.jsonc --port 8787",
+    "deploy:cloudflare": "npm run build:web && wrangler deploy --config wrangler.jsonc",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint"
   },
-  "private": true
+  "private": true,
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "workerd@1.20261119.1": true
+  }
 }

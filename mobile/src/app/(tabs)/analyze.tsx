@@ -2,7 +2,7 @@ import { File } from 'expo-file-system';
 import { fetch as expoFetch } from 'expo/fetch';
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { Link } from 'expo-router';
 import { Body, Button, Card, Label, PageTitle, palette, Screen, styles } from '@/components/beautilyze-ui';
 import { API_URL, readJsonResponse } from '@/constants/api';
@@ -34,11 +34,19 @@ export default function AnalyzeScreen() {
     setLoading(true); setMessage('');
     try {
       const form = new FormData();
-      form.append('image', new File(photo.uri) as unknown as Blob);
+      if (Platform.OS === 'web') {
+        const image = photo.file ?? await (await fetch(photo.uri)).blob();
+        form.append('image', image, photo.fileName || 'photo.jpg');
+      } else {
+        form.append('image', new File(photo.uri) as unknown as Blob);
+      }
       form.append('age_group', ageGroup);
       form.append('concerns', JSON.stringify(concerns));
       form.append('allergies', JSON.stringify(allergies));
-      const response = await expoFetch(`${API_URL}/predict`, { method: 'POST', body: form });
+      const request = { method: 'POST', body: form };
+      const response = Platform.OS === 'web'
+        ? await fetch(`${API_URL}/predict`, request)
+        : await expoFetch(`${API_URL}/predict`, request);
       const data = await readJsonResponse(response, 'We could not analyze this photo. Try another clear face photo.');
       setAnalysis({
         skin_type: data.skin_type,

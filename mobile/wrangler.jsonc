@@ -1,0 +1,11 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "beautilyze",
+  "compatibility_date": "2026-11-01",
+  // Static-only Worker: Expo's web export (npm run build:web) served as assets.
+  "assets": {
+    "directory": "./.expo-build",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  }
+}

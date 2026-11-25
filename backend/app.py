@@ -12,15 +12,17 @@ import json as json_lib
 import os
 import sqlite3
 from pathlib import Path
-from recommend import build_routine
+from recommend import DATABASE_PATH, build_routine
 import cv2
 import numpy as np
 
 app = Flask(__name__)
-CORS(app)
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+cors_origins = [origin.strip() for origin in os.environ.get('CORS_ORIGINS', '').split(',') if origin.strip()]
+CORS(app, origins=cors_origins or '*')
 
 BASE_DIR = Path(__file__).resolve().parent
-DATABASE_PATH = BASE_DIR / 'skincare.db'
+DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 def initialize_product_database():
     with sqlite3.connect(DATABASE_PATH) as connection:
@@ -58,7 +60,7 @@ for cascade, filename in (
     if cascade.empty():
         raise RuntimeError(f'OpenCV could not load its required cascade: {CASCADE_DIR / filename}')
 
-with open('class_names.json', 'r') as f:
+with open(BASE_DIR / 'class_names.json', 'r') as f:
     class_names = json.load(f)
 
 model = models.resnet18(weights=None)
@@ -67,7 +69,7 @@ model.fc = nn.Sequential(
     nn.Linear(model.fc.in_features, len(class_names))
 )
 
-model.load_state_dict(torch.load('skin_type_model.pth', map_location='cpu'))
+model.load_state_dict(torch.load(BASE_DIR / 'skin_type_model.pth', map_location='cpu'))
 model.eval()
 
 def contains_face(pil_image):

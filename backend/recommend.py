@@ -1,5 +1,6 @@
 """Ingredient-based product recommendations from RecLogic.csv and the SQLite catalogue."""
 
+import os
 import re
 import sqlite3
 import unicodedata
@@ -9,6 +10,7 @@ from pathlib import Path
 import pandas as pd
 
 BASE_DIR = Path(__file__).resolve().parent
+DATABASE_PATH = Path(os.environ.get('DATABASE_PATH') or BASE_DIR / 'skincare.db')
 
 
 def normalize_ingredient(value):
@@ -81,7 +83,7 @@ def get_ideal_ingredients(skin_type, concerns, age_group):
 
 
 def get_products(database_path=None):
-    with closing(sqlite3.connect(database_path or BASE_DIR / 'skincare.db')) as conn:
+    with closing(sqlite3.connect(database_path or DATABASE_PATH)) as conn:
         rows = conn.execute('SELECT name, category, skin_types, ingredients FROM products').fetchall()
     return [
         {

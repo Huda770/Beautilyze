@@ -19,7 +19,7 @@ The app has Home, Analyze, Routine, and Profile tabs. Create an account or sign 
 
 After 10 failed sign-ins within 15 minutes from one address or for one email, `/auth/login` answers 429 until the window passes. These counts are kept in memory per server process. Behind a reverse proxy, every client shares the proxy's address unless the proxy forwards the client address.
 
-For a public deployment, serve the API over HTTPS and set `CORS_ORIGINS` to a comma-separated list of the web origins allowed to call it (for example `https://app.example.com`). When it is unset, any origin is allowed, which is meant for local development only. The local Expo development setup uses HTTP on a trusted Wi-Fi network and is intended for development, not production. Password reset and email verification are not implemented.
+For a public deployment (Cloudflare Workers for the web app, Fly.io for the API), follow [DEPLOY.md](DEPLOY.md). Serve the API over HTTPS and set `CORS_ORIGINS` to a comma-separated list of the web origins allowed to call it (for example `https://app.example.com`). When it is unset, any origin is allowed, which is meant for local development only. The local Expo development setup uses HTTP on a trusted Wi-Fi network and is intended for development, not production. Password reset and email verification are not implemented.
 
 ## Allergies and sensitivities
 
